@@ -335,11 +335,15 @@ document (|
         vconcat[
           hconcat [
             include-image-with-height 100pt `fig/example2.jpg`;
+            gap 5pt;
             include-image-with-height 100pt `fig/example1.jpg`;
+            gap 20pt;
             include-image-with-height 100pt `fig/example2.jpg`;
           ];
+          gap 10pt;
           hconcat [
             include-image 100pt `fig/example.pdf`;
+            gap 30pt;
             include-image ?:4 100pt `fig/example.pdf`;
           ];
         ]
@@ -374,11 +378,15 @@ document (|
         vconcat[
           hconcat [
             include-image-with-height 100pt `fig/example2.jpg`;
+            sep 5pt;
             include-image-with-height 100pt `fig/example1.jpg`;
+            sep 20pt;
             include-image-with-height 100pt `fig/example2.jpg`;
           ];
+          sep 10pt;
           hconcat [
             include-image 100pt `fig/example.pdf`;
+            sep 30pt;
             include-image ?:4 100pt `fig/example.pdf`;
           ];
         ]
@@ -412,14 +420,15 @@ document (|
       +fig-center(
         let img1 = include-image 100pt `fig/example.pdf` in
         let img2 = include-image ?:4 60pt `fig/example.pdf` in
+        let separator = sep 0.5pt in
         vconcat [
-          sep 0pt;
+          separator;
           hconcat ?:align-top    [img1; gap 20pt; img2; gap 20pt; img1];
-          sep 0pt; gap 10pt; sep 0pt;
+          separator; gap 10pt; separator;
           hconcat ?:align-center [img1; gap 20pt; img2; gap 20pt; img1];
-          sep 0pt; gap 10pt; sep 0pt;
+          separator; gap 10pt; separator;
           hconcat ?:align-bottom [img1; gap 20pt; img2; gap 20pt; img1];
-          sep 0pt;
+          separator;
         ]
       );
     ```)<%
@@ -505,7 +514,7 @@ document (|
 
     +example(```
       +fig-center(
-        vconcat[
+        vconcat ?:align-center [
           include-image 200pt `fig/example.pdf`
             |> frame 0.5pt Color.black;
           gap 10pt;
