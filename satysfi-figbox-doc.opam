@@ -1,0 +1,36 @@
+opam-version: "2.0"
+name: "satysfi-figbox-doc"
+version: "1.0.0"
+synopsis: "Document of A Great SATySFi Package"
+description: """
+Brilliant description comes here.
+"""
+maintainer: "Your name <email@example.com>"
+authors: "Your name <email@example.com>"
+license: "MIT" # Choose what you want
+homepage: "https://github.com/<github-username>/satysfi-figbox"
+dev-repo: "git+https://github.com/<github-username>/satysfi-figbox.git"
+bug-reports: "https://github.com/<github-username>/satysfi-figbox/issues"
+depends: [
+  "satysfi" { >= "0.0.5" & < "0.0.6" }
+  "satyrographos" { >= "0.0.2.6" & < "0.0.3" }
+
+  # You may want to include the corresponding library
+  "satysfi-figbox" {= "%{version}%"}
+
+  # Other libraries
+  "satysfi-dist"
+  "satysfi-base"
+]
+build: [
+  ["satyrographos" "opam" "build"
+   "--name" "figbox-doc"
+   "--prefix" "%{prefix}%"
+   "--script" "%{build}%/Satyristes"]
+]
+install: [
+  ["satyrographos" "opam" "install"
+   "--name" "figbox-doc"
+   "--prefix" "%{prefix}%"
+   "--script" "%{build}%/Satyristes"]
+]

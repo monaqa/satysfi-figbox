@@ -1,0 +1,492 @@
+@require: stdjareport
+@require: itemize
+@require: annot
+@require: code
+
+@require: easytable/easytable
+@require: enumitem/enumitem
+
+@require: base/typeset/base
+@import: ../src/figbox
+
+open FigBox
+open EasyTableAlias
+
+let-block ctx +block-frame bt =
+  let decoset = VDecoSet.simple-frame 0.5pt Color.black Color.white in
+  block-frame-breakable ctx (5pt, 5pt, 10pt, 10pt) decoset (fun ctx -> read-block ctx bt)
+
+let-block +example str bt =
+  '<%
+    +code(str);
+    +block-frame(bt);
+  >%
+
+in
+
+document (|
+  title = {figbox マニュアル};
+  author = {\@monaqa};
+|) '<
++chapter{figbox とは} <%
+  +p {
+    figbox は \SATySFi; で図を整列配置するためのパッケージです。
+  }
+
+>%
+
++chapter{figbox パッケージの概要}<%
+
+  +p{
+    figbox パッケージを用いるには冒頭に以下のように記述します。
+  }
+
+  +code(```
+    @require: figbox
+
+    open FigBox
+  ```);
+
+  +p{
+    以下の例では `figbox` パッケージを入れ、 `FigBox` モジュールを open していることを前提とします。
+  }
+
+  +p{
+    figbox パッケージは主に以下の2種類の機能を提供します。
+  }
+
+  +listing{
+    * `figbox` 型の値を生成する函数。1つ以上の `figbox` を受け取って新たな `figbox` を返すものもある。
+    * `figbox` 型の値を、インラインテキストやブロックテキストとして埋め込むためのコマンド。
+  }
+
+  +p{
+    たとえば以下のように書けば、
+    有名なパングラムである “The quick brown...” を横幅 100pt で行分割して得られるテキストボックスを、
+    紙面に中央揃えで表示することができます。
+  }
+
+  +example(```
+  +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+  ```)<%
+  +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+  >%
+
+  +p{
+    ここで `+fig-center` は、
+    引数として与えられた `figbox` 型の図を紙面に中央揃えで配置するコマンドです。
+    また、 `textbox-with-width` という関数は `length -> inline-text -> figbox` 型の関数であり、
+    指定した長さを横幅に、指定したテキストを内容に持つよう行分割された段落を「図」として生成します。
+    ここでの「図」とは、もちろん `figbox` 型の値、ということです。
+  }
+
+  +p{
+    `figbox` は図の内容そのものを表す型です。もう少し詳しく述べると、
+    「テキスト処理文脈を受け取ることで、図として出力できるようになるもの」となります。
+    そういう意味では `inline-text` 型や `ctx -> inline-boxes` 型に近いかもしれません。
+  }
+  +p{
+    `figbox` を受け取って埋め込むコマンドは `+fig-center` 以外にもいくつか用意されており、
+    `figbox` を生成するための関数も様々です（自作することもできます）。
+    `figbox` 型を介したインターフェース及び関数型言語の文法を活用することで、
+    複雑な図の配置を直感的な式で表現することができます。
+    次の章で具体例を見てみましょう。
+  }
+
+>%
+
++chapter{Gallery} <%
+
+  +section{`figbox` を生成する関数}<%
+
+    +p{
+      「図」として思い浮かぶ代表的なものは画像でしょう。
+      図は `include-image` 及び `include-image-with-height` を用いて読み込むことができます。
+      `include-image` は画像の横幅を、 `include-image-with-height` は縦幅を指定します。
+    }
+
+    +example(```
+    +fig-center(include-image 100pt `fig/example1.jpg`);
+    +fig-center(include-image-with-height 100pt `fig/example1.jpg`);
+    ```)<%
+    +fig-center(include-image 100pt `fig/example1.jpg`);
+    +fig-center(include-image-with-height 100pt `fig/example1.jpg`);
+    >%
+
+    +p{
+      上の例では JPEG 形式の図を読み込みましたが、 PDF 形式の図を指定することもできます。
+      PDF の場合はデフォルトで1ページ目の図を読み込むものの、
+      オプション引数にて読み込みたいページ数を与えることもできます。
+    }
+
+    +example(```
+    +fig-center(include-image 150pt `fig/example.pdf`);
+    % 4ページ目を読み込む
+    +fig-center(include-image ?:4 150pt `fig/example.pdf`);
+    ```)<%
+    +fig-center(include-image 150pt `fig/example.pdf`);
+    % 4ページ目を読み込む
+    +fig-center(include-image ?:4 150pt `fig/example.pdf`);
+    >%
+
+    +p{
+      もちろん、 `include-image-with-height` でも同様のことができます。
+    }
+
+    +p{
+      縦横の長さを指定して、ダミーの図を配置することもできます。
+      図の大きさが判明してさえいれば、
+      まだ図そのものが無くても図を除いたレイアウトが再現できて便利です。
+    }
+
+    +example(```
+    +fig-center(dummy-box 200pt 100pt);
+    ```)<%
+    +fig-center(dummy-box 200pt 100pt);
+    >%
+
+    +p{
+      テキストや数式をはじめとしたインラインテキストやブロックテキストも `figbox` 型に変換することができます。
+      SATySFi では表やグラフィックスもインラインテキストに埋め込むことができるため、
+      実質何でもあり、といえるかもしれません。
+    }
+
+    +example(```
+    +fig-center(textbox {The quick brown fox jumps over the lazy dog.});
+    +fig-center(textbox {${x = \frac{-b\pm \sqrt{b^2 - 4ac}}{2a}}});
+    +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+    ```)<%
+    +fig-center(textbox {The quick brown fox jumps over the lazy dog.});
+    +fig-center(textbox {${x = \frac{-b\pm \sqrt{b^2 - 4ac}}{2a}}});
+    +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+    >%
+
+    +p{
+      SATySFi では表やグラフィックスもインラインテキストに埋め込むことができるため、
+      実質何でもあり、といえるかもしれません。
+      以下は `easytable` パッケージを用いて組んだ表を中央揃えにする例です。
+    }
+
+    +example(```
+    +fig-center(textbox {\easytable[l; c; r;]{
+      | header1    | header2      | header3
+      | align left | align center | align right
+      | a          | b            | c
+      | }});
+    ```)<%
+    +fig-center(textbox {\easytable[l; c; r;]{
+      | header1    | header2      | header3
+      | align left | align center | align right
+      | a          | b            | c
+      | }});
+    >%
+
+    +p{
+      オプション引数にテキスト処理文脈の変換関数（`context -> context` 型）を入れることで書式を変更することもできます。
+    }
+
+    +example(```
+    +fig-center(
+      textbox ?:(set-font-size 9pt)
+        {The quick brown fox jumps over the lazy dog.}
+    );
+    +fig-center(
+      textbox-with-width
+        ?:(fun ctx -> ctx |> set-font-size 14pt
+                          |> set-text-color Color.blue)
+          200pt
+            {The quick brown fox jumps over the lazy dog.});
+    ```)<%
+    +fig-center(
+      textbox ?:(set-font-size 9pt)
+        {The quick brown fox jumps over the lazy dog.}
+    );
+    +fig-center(
+      textbox-with-width
+        ?:(fun ctx -> ctx |> set-font-size 14pt
+                          |> set-text-color Color.blue)
+          200pt
+            {The quick brown fox jumps over the lazy dog.});
+    >%
+
+
+  >%
+
+  +section{`figbox` を変換・結合する関数}<%
+    
+    +p{
+      ここまでの例では、 figbox パッケージをわざわざ用いる有難みが感じられなかったかもしれません。
+      このパッケージの強みは、上で述べた関数を使って得られた「図」をいくつも組み合わせ、
+      より複雑な図を簡単に作成できる点にあります。
+    }
+
+    +p{
+      figbox パッケージでは、複数の図を縦や横に結合することができます。
+    }
+
+    +example(```
+      +fig-center(hconcat [
+        include-image-with-height 100pt `fig/example1.jpg`;
+        include-image-with-height 100pt `fig/example2.jpg`;
+      ]);
+    ```)<%
+      +fig-center(hconcat [
+        include-image-with-height 100pt `fig/example1.jpg`;
+        include-image-with-height 100pt `fig/example2.jpg`;
+      ]);
+    >%
+
+    +example(```
+      +fig-center(vconcat [
+        include-image 150pt `fig/example.pdf`;
+        include-image ?:4 150pt `fig/example.pdf`;
+      ]);
+    ```)<%
+      +fig-center(vconcat [
+        include-image 150pt `fig/example.pdf`;
+        include-image ?:4 150pt `fig/example.pdf`;
+      ]);
+    >%
+
+    +p{
+      `hconcat` や `vconcat` の返り値もまた `figbox` 型であるということに注意してください。
+      つまり、これらは自由にネストさせることができます。
+    }
+
+    +example(```
+      +fig-center(
+        vconcat[
+          hconcat [
+            include-image-with-height 100pt `fig/example2.jpg`;
+            include-image-with-height 100pt `fig/example1.jpg`;
+            include-image-with-height 100pt `fig/example2.jpg`;
+          ];
+          hconcat [
+            include-image 100pt `fig/example.pdf`;
+            include-image ?:4 100pt `fig/example.pdf`;
+          ];
+        ]
+      );
+    ```)<%
+      +fig-center(
+        vconcat[
+          hconcat [
+            include-image-with-height 100pt `fig/example2.jpg`;
+            include-image-with-height 100pt `fig/example1.jpg`;
+            include-image-with-height 100pt `fig/example2.jpg`;
+          ];
+          hconcat [
+            include-image 100pt `fig/example.pdf`;
+            include-image ?:4 100pt `fig/example.pdf`;
+          ];
+        ]
+      );
+    >%
+
+    +p{
+      `hconcat` や `vconcat` 関数は単に図をつなげるだけであり、
+      間に余白を入れてくれません。
+      余白を入れるときは間に `gap` という関数により作成される特殊な `figbox` を指定します。
+      これは `hconcat` 関数の中では横に隙間を開けるはたらきを、
+      `vconcat` 関数の中では縦に隙間を開けるはたらきをします。
+    }
+
+    +example(```
+      +fig-center(
+        vconcat[
+          hconcat [
+            include-image-with-height 100pt `fig/example2.jpg`;
+            include-image-with-height 100pt `fig/example1.jpg`;
+            include-image-with-height 100pt `fig/example2.jpg`;
+          ];
+          hconcat [
+            include-image 100pt `fig/example.pdf`;
+            include-image ?:4 100pt `fig/example.pdf`;
+          ];
+        ]
+      );
+    ```)<%
+      +fig-center(
+        vconcat[
+          hconcat [
+            include-image-with-height 100pt `fig/example2.jpg`;
+            gap 5pt;
+            include-image-with-height 100pt `fig/example1.jpg`;
+            gap 20pt;
+            include-image-with-height 100pt `fig/example2.jpg`;
+          ];
+          gap 10pt;
+          hconcat [
+            include-image 100pt `fig/example.pdf`;
+            gap 30pt;
+            include-image ?:4 100pt `fig/example.pdf`;
+          ];
+        ]
+      );
+    >%
+
+    +p{
+      オプション引数で `align-left`, `align-center`, `align-right`, `align-top`, `align-bottom` の
+      5種類のいずれかを指定することで、揃え方を変えることができます。
+    }
+
+    +example(```
+      +fig-center(
+        let img1 = include-image 100pt `fig/example.pdf` in
+        let img2 = include-image ?:4 60pt `fig/example.pdf` in
+        vconcat [
+          hconcat ?:align-top    [img1; gap 20pt; img2; gap 20pt; img1];
+          gap 10pt;
+          hconcat ?:align-center [img1; gap 20pt; img2; gap 20pt; img1];
+          gap 10pt;
+          hconcat ?:align-bottom [img1; gap 20pt; img2; gap 20pt; img1];
+        ]
+      );
+    ```)<%
+      +fig-center(
+        let img1 = include-image 100pt `fig/example.pdf` in
+        let img2 = include-image ?:4 60pt `fig/example.pdf` in
+        vconcat [
+          hconcat ?:align-top    [img1; gap 20pt; img2; gap 20pt; img1];
+          gap 10pt;
+          hconcat ?:align-center [img1; gap 20pt; img2; gap 20pt; img1];
+          gap 10pt;
+          hconcat ?:align-bottom [img1; gap 20pt; img2; gap 20pt; img1];
+        ]
+      );
+    >%
+
+    +p{
+      この機能を使えば、図にキャプションを付けることだって簡単にできますね。
+    }
+
+    +example(```
+      +fig-center(
+        vconcat[
+          include-image 200pt `fig/example.pdf`;
+          gap 10pt;
+          textbox {図1: `slydifi` パッケージで組んだスライドの例。};
+        ]
+      );
+    ```)<%
+      +fig-center(
+        vconcat ?:align-center [
+          include-image 200pt `fig/example.pdf`;
+          gap 10pt;
+          textbox {図1: `slydifi` パッケージで組んだスライドの例};
+        ]
+      );
+    >%
+
+    +p{
+      図はフレームで囲むことができます。
+      `frame` 関数は `length -> color -> figbox -> figbox` 型を持ち、
+      与えられた線幅・線色で、与えられた figbox を囲みます。
+    }
+
+
+    +example(```
+    +fig-center(
+      frame 1pt Color.black (include-image 100pt `fig/example1.jpg`)
+    );
+    ```)<%
+    +fig-center(
+      frame 1pt Color.black (include-image 100pt `fig/example1.jpg`)
+    );
+    >%
+
+    +p{
+      もう少し外側に枠を付けたい、と感じたかもしれません。
+      そんなときには図にマージンをつけるのが良いでしょう。
+      `vmargin` は上下に、 `hmargin` は左右に、 `hvmargin` は上下左右にマージンをつけることができます。
+    }
+
+    +example(```
+    +fig-center(
+      frame 1pt Color.black
+        (hvmargin 5pt (include-image 100pt `fig/example1.jpg`))
+    );
+    ```)<%
+    +fig-center(
+      frame 1pt Color.black
+        (hvmargin 5pt (include-image 100pt `fig/example1.jpg`))
+    );
+    >%
+
+    +p{
+      なお、SATySFi 標準で用意されている\emph{パイプライン演算子} `|>` を用いると以下のように書くこともできます。
+    }
+
+    +code(```
+    +fig-center(
+      include-image 100pt `fig/example1.jpg`
+        |> hvmargin 5pt
+        |> frame 1pt Color.black
+    );
+    ```);
+
+    +p{
+      このようにすればカッコのネストを軽減できるだけでなく、
+      \Enumitem.enumerate?:(Enumitem.dot-arabic){
+        * `fig/example1.jpg` を横幅 100pt で読み込む
+        * 上の図の上下左右に 5pt のマージンを追加する
+        * 上の図を幅 1pt の黒線で囲む
+      }
+      と、直感的な順番で処理を記述することができます。
+    }
+
+    +p{
+      その他、図の背景色を指定する `bgcolor` などの関数も用意されています。
+      こちらもやはり `margin` 系の関数でマージンを指定しつつ使うのが良いでしょう。
+      figbox を回転させる `rotate` 関数もあります。
+      テキストや画像を回転させたいときに重宝するでしょう。
+    }
+
+  >%
+
+  +section{`figbox` を埋め込むコマンド}<%
+
+    +p{
+      ここまでの例では `figbox` を実際にインラインテキストやブロックテキストに埋め込むために
+      全て `fig-center` を使っていましたが、実際には他にもいくつかのコマンドがあります。
+    }
+
+    +p{
+      `+fig-block` は `fig-center` と似ていますが、
+      オプション引数に `align-left`, `align-center`, `align-right` を取り、
+      揃える位置を選ぶことができます。
+    }
+
+    +example(```
+      +fig-block ?:(align-left) (
+        include-image-with-height 100pt `fig/example2.jpg` |> rotate 90.
+      );
+      +fig-block ?:(align-center) (
+        include-image-with-height 100pt `fig/example2.jpg` |> rotate 90.
+      );
+      +fig-block ?:(align-right) (
+        include-image-with-height 100pt `fig/example2.jpg` |> rotate 90.
+      );
+    ```)<%
+      +fig-block ?:(align-left) (
+        include-image-with-height 100pt `fig/example2.jpg` |> rotate 90.
+      );
+      +fig-block ?:(align-center) (
+        include-image-with-height 100pt `fig/example2.jpg` |> rotate 90.
+      );
+      +fig-block ?:(align-right) (
+        include-image-with-height 100pt `fig/example2.jpg` |> rotate 90.
+      );
+    >%
+
+
+    +p{
+      `+fig-abs-pos` は
+    }
+
+
+  >%
+
+>%
+
+>
