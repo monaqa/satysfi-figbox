@@ -56,3 +56,9 @@ open FigBox
   }
 >
 ```
+
+---
+
+![example.png](https://user-images.githubusercontent.com/48883418/109374490-ee4a4780-78f8-11eb-951a-d6642a444e5c.png)
+
+---
