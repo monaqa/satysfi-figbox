@@ -1,16 +1,16 @@
 opam-version: "2.0"
 name: "satysfi-figbox"
 version: "0.1.0"
-synopsis: "A Great SATySFi Package"
+synopsis: "A SATySFi package for creating charts and placing them in inappropriate positions."
 description: """
-Brilliant description comes here.
+A SATySFi package that creates charts and places them in inappropriate positions in your document.
 """
-maintainer: "Your name <email@example.com>"
-authors: "Your name <email@example.com>"
-license: "MIT"
-homepage: "https://github.com/<github-username>/satysfi-figbox"
-dev-repo: "git+https://github.com/<github-username>/satysfi-figbox.git"
-bug-reports: "https://github.com/<github-username>/satysfi-figbox/issues"
+maintainer: "Mogami Shinichi <mogassy@yahoo.co.jp>"
+authors: "Mogami Shinichi <mogassy@yahoo.co.jp>"
+license: "MIT" # Choose what you want
+homepage: "https://github.com/monaqa/satysfi-figbox"
+dev-repo: "git+https://github.com/monaqa/satysfi-figbox.git"
+bug-reports: "https://github.com/monaqa/satysfi-figbox/issues"
 depends: [
   "satysfi" { >= "0.0.6" & < "0.0.7" }
   "satyrographos" { >= "0.0.2.6" & < "0.0.3" }
