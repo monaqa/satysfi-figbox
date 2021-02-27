@@ -6,7 +6,7 @@
   ;; Library name
   (name "figbox")
   ;; Library version
-  (version "1.0.0")
+  (version "0.1.0")
   ;; Files
   (sources
     ((packageDir "src")))
@@ -23,7 +23,7 @@
   ;; Library doc name
   (name "figbox-doc")
   ;; Library version
-  (version "1.0.0")
+  (version "0.1.0")
   ;; Working directory to build docs
   (workingDirectory "doc")
   ;; Build commands
@@ -40,4 +40,6 @@
     ((figbox ()) ; the main library
      (dist ()) ; Standard library
      (base ()) ; Base library
+     (easytable ())
+     (enumitem ())
     )))
