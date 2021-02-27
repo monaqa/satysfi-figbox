@@ -415,18 +415,16 @@ end = struct
     let margin = Option.from 20pt margin in
     let ib = embed-figure ctx fb in
     let (ib-wid, ib-ht, ib-dp) = get-natural-metrics ib in
-    let ib-fig =
-      inline-graphics 0pt 0pt 0pt (fun (x, y) -> [
-        draw-text
-          (x +' (get-text-width ctx) -' ib-wid,
-          y +' (ctx |> get-font-size) -' ib-ht)
-            ib
-      ])
+    let pads = (0pt, ib-wid +' margin, 0pt, 0pt) in
+    let textwid = get-text-width ctx in
+    let deco (x, y) w h d =
+      [ draw-text (x +' textwid -' ib-wid, y +' h -' ib-ht) ib ]
     in
-    let twid = get-text-width ctx in
-    let wid = (get-text-width ctx) -' ib-wid -' margin in
-    let ib-content = embed-block-top ctx wid (fun ctx -> read-block ctx bt) in
-    line-break false false ctx (ib-fig ++ ib-content)
+    let ib-content =
+      block-frame-breakable ctx pads (deco, deco, empty-deco, empty-deco)
+        (fun ctx -> read-block ctx bt)
+    in
+    ib-content
 
   let-block ctx +fig-on-left ?:margin fb bt =
     let margin = Option.from 20pt margin in
