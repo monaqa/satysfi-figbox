@@ -12,6 +12,17 @@
 open FigBox
 open EasyTableAlias
 
+let-block ctx +ctx ctxf bt = read-block (ctxf ctx) bt
+
+let document record content = StdJaReport.document record '<%
+  +ctx(fun ctx -> (
+    let fsize = get-font-size ctx in
+    ctx |> set-paragraph-margin fsize fsize
+        |> set-leading (fsize *' 1.6)
+        |> set-code-text-command (command \code)
+  ))(content);
+>%
+
 let-block ctx +block-frame bt =
   let decoset = VDecoSet.simple-frame 0.5pt Color.black Color.white in
   block-frame-breakable ctx (5pt, 5pt, 10pt, 10pt) decoset (fun ctx -> read-block ctx bt)
@@ -21,6 +32,26 @@ let-block +example str bt =
     +code(str);
     +block-frame(bt);
   >%
+
+let-inline \pang = {The quick brown fox jumps over the lazy dog.}
+
+let-inline \lipsum = {
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+  Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+  Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+}
+
+let-inline \jugem = {
+寿限無，寿限無，五劫のすりきれ，
+海砂利水魚の水行末・雲来末・風来末，
+食う寝るところに住むところ，
+やぶら小路のぶら小路，
+パイポパイポ，パイポのシューリンガン，
+シューリンガンのグーリンダイ，
+グーリンダイのポンポコピーのポンポコナーの長久命の長助．
+}
+
 
 in
 
@@ -39,6 +70,7 @@ document (|
 
   +p{
     figbox パッケージを用いるには冒頭に以下のように記述します。
+    以後のすべての例で figbox パッケージが適切にインポートされていることを前提とします。
   }
 
   +code(```
@@ -48,22 +80,14 @@ document (|
   ```);
 
   +p{
-    以下の例では `figbox` パッケージを入れ、 `FigBox` モジュールを open していることを前提とします。
+    以後、すべての例で figbox パッケージが上の通りインポートされていることを前提とします。
   }
 
   +p{
-    figbox パッケージは主に以下の2種類の機能を提供します。
-  }
-
-  +listing{
-    * `figbox` 型の値を生成する函数。1つ以上の `figbox` を受け取って新たな `figbox` を返すものもある。
-    * `figbox` 型の値を、インラインテキストやブロックテキストとして埋め込むためのコマンド。
-  }
-
-  +p{
-    たとえば以下のように書けば、
+    では、早速 figbox パッケージを用いて図を配置してみましょう。
+    以下の例は、
     有名なパングラムである “The quick brown...” を横幅 100pt で行分割して得られるテキストボックスを、
-    紙面に中央揃えで表示することができます。
+    紙面に中央揃えで表示したものです。
   }
 
   +example(```
@@ -73,23 +97,37 @@ document (|
   >%
 
   +p{
-    ここで `+fig-center` は、
-    引数として与えられた `figbox` 型の図を紙面に中央揃えで配置するコマンドです。
-    また、 `textbox-with-width` という関数は `length -> inline-text -> figbox` 型の関数であり、
+    figbox パッケージが提供するのは `+fig-center` コマンドと `textbox-with-width` 関数です。
+    `+fig-center` は引数として与えられた `figbox` 型の図を紙面に中央揃えで配置します。
+    それに対して `textbox-with-width` は `length -> inline-text -> figbox` 型の関数であり、
     指定した長さを横幅に、指定したテキストを内容に持つよう行分割された段落を「図」として生成します。
-    ここでの「図」とは、もちろん `figbox` 型の値、ということです。
+  }
+  +p{
+    このように、figbox パッケージが提供する機能は主に以下の2種類です。
+  }
+
+  +listing{
+    * `figbox` 型の値を、インラインテキストやブロックテキストとして埋め込むためのコマンド。
+    * `figbox` 型の値を生成・変換する函数。
   }
 
   +p{
-    `figbox` は図の内容そのものを表す型です。もう少し詳しく述べると、
-    「テキスト処理文脈を受け取ることで、図として出力できるようになるもの」となります。
-    そういう意味では `inline-text` 型や `ctx -> inline-boxes` 型に近いかもしれません。
+    上の説明から分かる通り、
+    figbox パッケージではパッケージ名そのままの `figbox` という型がきわめて重要な役割を担っています。
+    % `figbox` は図の内容そのものを表す型です。もう少し詳しく述べると、
+    % 「テキスト処理文脈を受け取ることで、図として出力できるようになるもの」となります。
+    % そういう意味では `inline-text` 型や `ctx -> inline-boxes` 型に近いかもしれません。
   }
   +p{
-    `figbox` を受け取って埋め込むコマンドは `+fig-center` 以外にもいくつか用意されており、
-    `figbox` を生成するための関数も様々です（自作することもできます）。
-    `figbox` 型を介したインターフェース及び関数型言語の文法を活用することで、
-    複雑な図の配置を直感的な式で表現することができます。
+    `figbox` を受け取って埋め込むコマンドは `+fig-center` だけではありません。
+    後に述べるように、図を文書内の適切な位置に配置するための様々なコマンドが提供されています。
+
+    また、`figbox` を生成するための関数も同様に様々なものがあります。
+    単に `figbox` を生成するだけでなく、
+    複数の `figbox` を組み合わせて新たな `figbox` を生成する、といったことも自由にできます。
+
+    figbox パッケージでは、これらのインターフェースによって
+    「複雑な図を文書内の自由な位置に配置する」ことを実現しています。
     次の章で具体例を見てみましょう。
   }
 
@@ -101,7 +139,7 @@ document (|
 
     +p{
       「図」として思い浮かぶ代表的なものは画像でしょう。
-      図は `include-image` 及び `include-image-with-height` を用いて読み込むことができます。
+      画像は2種類の関数、`include-image` 及び `include-image-with-height` を用いて読み込むことができます。
       `include-image` は画像の横幅を、 `include-image-with-height` は縦幅を指定します。
     }
 
@@ -114,7 +152,8 @@ document (|
     >%
 
     +p{
-      上の例では JPEG 形式の図を読み込みましたが、 PDF 形式の図を指定することもできます。
+      上の例では JPEG 形式の図を読み込みましたが、
+      同じ関数にて PDF 形式の図を指定することもできます。
       PDF の場合はデフォルトで1ページ目の図を読み込むものの、
       オプション引数にて読み込みたいページ数を与えることもできます。
     }
@@ -130,6 +169,8 @@ document (|
     >%
 
     +p{
+      \SATySFi; がサポートしている画像の形式は JPEG 及び PDF ですが、
+      上で挙げた関数はファイルの拡張子から画像の形式を自動で判断しています。
       もちろん、 `include-image-with-height` でも同様のことができます。
     }
 
@@ -147,8 +188,6 @@ document (|
 
     +p{
       テキストや数式をはじめとしたインラインテキストやブロックテキストも `figbox` 型に変換することができます。
-      SATySFi では表やグラフィックスもインラインテキストに埋め込むことができるため、
-      実質何でもあり、といえるかもしれません。
     }
 
     +example(```
@@ -287,8 +326,8 @@ document (|
       `hconcat` や `vconcat` 関数は単に図をつなげるだけであり、
       間に余白を入れてくれません。
       余白を入れるときは間に `gap` という関数により作成される特殊な `figbox` を指定します。
-      これは `hconcat` 関数の中では横に隙間を開けるはたらきを、
-      `vconcat` 関数の中では縦に隙間を開けるはたらきをします。
+      これは `hconcat` 関数の中では横に隙間をあけるはたらきを、
+      `vconcat` 関数の中では縦に隙間をあけるはたらきをします。
     }
 
     +example(```
@@ -326,6 +365,45 @@ document (|
     >%
 
     +p{
+      `gap` 関数の代わりに `sep` 関数を用いると、
+      間に隙間を空けた後に線を引くことができます。
+    }
+
+    +example(```
+      +fig-center(
+        vconcat[
+          hconcat [
+            include-image-with-height 100pt `fig/example2.jpg`;
+            include-image-with-height 100pt `fig/example1.jpg`;
+            include-image-with-height 100pt `fig/example2.jpg`;
+          ];
+          hconcat [
+            include-image 100pt `fig/example.pdf`;
+            include-image ?:4 100pt `fig/example.pdf`;
+          ];
+        ]
+      );
+    ```)<%
+      +fig-center(
+        vconcat[
+          hconcat [
+            include-image-with-height 100pt `fig/example2.jpg`;
+            sep 5pt;
+            include-image-with-height 100pt `fig/example1.jpg`;
+            sep 20pt;
+            include-image-with-height 100pt `fig/example2.jpg`;
+          ];
+          sep 10pt;
+          hconcat [
+            include-image 100pt `fig/example.pdf`;
+            sep 30pt;
+            include-image ?:4 100pt `fig/example.pdf`;
+          ];
+        ]
+      );
+    >%
+
+    +p{
       オプション引数で `align-left`, `align-center`, `align-right`, `align-top`, `align-bottom` の
       5種類のいずれかを指定することで、揃え方を変えることができます。
     }
@@ -335,45 +413,28 @@ document (|
         let img1 = include-image 100pt `fig/example.pdf` in
         let img2 = include-image ?:4 60pt `fig/example.pdf` in
         vconcat [
+          sep 0pt;
           hconcat ?:align-top    [img1; gap 20pt; img2; gap 20pt; img1];
-          gap 10pt;
+          sep 0pt; gap 10pt; sep 0pt;
           hconcat ?:align-center [img1; gap 20pt; img2; gap 20pt; img1];
-          gap 10pt;
+          sep 0pt; gap 10pt; sep 0pt;
           hconcat ?:align-bottom [img1; gap 20pt; img2; gap 20pt; img1];
+          sep 0pt;
         ]
       );
     ```)<%
       +fig-center(
         let img1 = include-image 100pt `fig/example.pdf` in
         let img2 = include-image ?:4 60pt `fig/example.pdf` in
+        let separator = sep 0.5pt in
         vconcat [
+          separator;
           hconcat ?:align-top    [img1; gap 20pt; img2; gap 20pt; img1];
-          gap 10pt;
+          separator; gap 10pt; separator;
           hconcat ?:align-center [img1; gap 20pt; img2; gap 20pt; img1];
-          gap 10pt;
+          separator; gap 10pt; separator;
           hconcat ?:align-bottom [img1; gap 20pt; img2; gap 20pt; img1];
-        ]
-      );
-    >%
-
-    +p{
-      この機能を使えば、図にキャプションを付けることだって簡単にできますね。
-    }
-
-    +example(```
-      +fig-center(
-        vconcat[
-          include-image 200pt `fig/example.pdf`;
-          gap 10pt;
-          textbox {図1: `slydifi` パッケージで組んだスライドの例。};
-        ]
-      );
-    ```)<%
-      +fig-center(
-        vconcat ?:align-center [
-          include-image 200pt `fig/example.pdf`;
-          gap 10pt;
-          textbox {図1: `slydifi` パッケージで組んだスライドの例};
+          separator;
         ]
       );
     >%
@@ -396,9 +457,10 @@ document (|
     >%
 
     +p{
-      もう少し外側に枠を付けたい、と感じたかもしれません。
+      少し窮屈ですね。もう少し外側に枠を付けるべきかもしれません。
       そんなときには図にマージンをつけるのが良いでしょう。
-      `vmargin` は上下に、 `hmargin` は左右に、 `hvmargin` は上下左右にマージンをつけることができます。
+      `vmargin`、`hmargin`、`hvmargin` はいずれも1つの `length` 型の値を引数にとり、
+      それぞれ上下、左右、上下左右にマージンをつけることができます。
     }
 
     +example(```
@@ -436,9 +498,38 @@ document (|
     }
 
     +p{
-      その他、図の背景色を指定する `bgcolor` などの関数も用意されています。
+      テキストボックスも「図」の一部でしたから、
+      画像にキャプションを付けることだって、
+      それにフレームを付けることだって簡単にできますね。
+    }
+
+    +example(```
+      +fig-center(
+        vconcat[
+          include-image 200pt `fig/example.pdf`
+            |> frame 0.5pt Color.black;
+          gap 10pt;
+          textbox {図1: `slydifi` パッケージで組んだスライドの例};
+        ]
+          |> hvmargin 10pt |> frame 1.5pt (Color.gray 0.8)
+      );
+    ```)<%
+      +fig-center(
+        vconcat ?:align-center [
+          include-image 200pt `fig/example.pdf`
+            |> frame 0.5pt Color.black;
+          gap 10pt;
+          textbox {図1: `slydifi` パッケージで組んだスライドの例};
+        ]
+          |> hvmargin 10pt |> frame 1.5pt (Color.gray 0.8)
+      );
+    >%
+
+
+    +p{
+      `figbox` を変換する関数としては、その他にも図の背景色を指定する `bgcolor` などが用意されています。
       こちらもやはり `margin` 系の関数でマージンを指定しつつ使うのが良いでしょう。
-      figbox を回転させる `rotate` 関数もあります。
+      また、figbox を回転させる `rotate` 関数もあります。
       テキストや画像を回転させたいときに重宝するでしょう。
     }
 
@@ -448,7 +539,7 @@ document (|
 
     +p{
       ここまでの例では `figbox` を実際にインラインテキストやブロックテキストに埋め込むために
-      全て `fig-center` を使っていましたが、実際には他にもいくつかのコマンドがあります。
+      全て `+fig-center` を使っていましたが、実際には他にもいくつかのコマンドがあります。
     }
 
     +p{
@@ -481,8 +572,102 @@ document (|
 
 
     +p{
-      `+fig-abs-pos` は
+      `+fig-abs-pos` 及び `\fig-abs-pos` は紙面への絶対座標を指定して描画することができます。
+      それ自身はそれぞれ大きさ0のブロックボックス列及びインラインボックス列としてふるまいます。
     }
+
+    +example(```
+      +fig-abs-pos((30pt, 200pt))(
+        include-image-with-height 100pt `fig/example2.jpg`
+      );
+    ```)<%
+      +fig-abs-pos((30pt, 200pt))(
+        include-image-with-height 100pt `fig/example2.jpg`
+      );
+    >%
+
+    +p{
+      `\fig-inline` を使えば、通常のインラインテキストの中に `figbox` を埋め込むことができます。
+    }
+
+    +example(```
+      +p{つまり我々は \fig-inline(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+    ```)<%
+      +p{つまり我々は \fig-inline(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+    >%
+
+    +p{
+      `\fig-inline` はオプション引数を1つ取り、 `align-top` などを指定することで
+      埋め込む際に画像を行のどの位置を基準にして置くか指定することができます。
+    }
+
+    +example(```
+      +p{つまり我々は \fig-inline?:(align-top)(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+      +p{つまり我々は \fig-inline?:(align-center)(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+    ```)<%
+      +p{つまり我々は \fig-inline?:(align-top)(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+      +p{つまり我々は \fig-inline?:(align-center)(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+    >%
+
+
+    +p{
+      テキストや数式の装飾には `inline-frame-inner` や `inline-frame-breakable` などを用いたほうが筋が良いものの、
+      画像やロゴをテキスト中に入れるときなどに重宝するかもしれません。
+    }
+
+    +p{
+      `+fig-on-right` は段落の右側に figbox を配置する機能です。
+      段落の幅は、 figbox の幅に合わせて自動的に狭まります。
+    }
+
+    +example(```
+      +p{ \jugem; }
+      +fig-on-right(include-image-with-height 100pt `fig/example2.jpg`)<
+        +p{ \jugem; }
+        +p{ \jugem; }
+      >
+      +p{ \jugem; }
+    ```)<%
+      +p{ \jugem; }
+      +fig-on-right(include-image-with-height 100pt `fig/example2.jpg`)<
+        +p{ \jugem; }
+        +p{ \jugem; }
+      >
+      +p{ \jugem; }
+    >%
+
+    +p{
+      `+fig-on-left` は逆に図を左側に配置します。
+    }
+
+
+    +example(```
+      +p{ \jugem; }
+      +fig-on-left(include-image-with-height 100pt `fig/example2.jpg`)<
+        +p{ \jugem; }
+        +p{ \jugem; }
+      >
+      +p{ \jugem; }
+    ```)<%
+      +p{ \jugem; }
+      +fig-on-left(include-image-with-height 100pt `fig/example2.jpg`)<
+        +p{ \jugem; }
+        +p{ \jugem; }
+      >
+      +p{ \jugem; }
+    >%
 
 
   >%

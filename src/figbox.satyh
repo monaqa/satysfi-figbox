@@ -26,19 +26,12 @@ module FigBox : sig
   val draft: figbox -> figbox
   val shift: length -> length -> figbox -> figbox
   val gap: length -> figbox
-  val sep: length?-> color?-> length -> figbox
+  val sep: ((length * length) -> (length * length) -> graphics list)?-> length -> figbox
   val glass-box: (float * float)?-> length -> length -> figbox -> figbox
   val frame: length -> color -> figbox -> figbox
   val bgcolor: color -> figbox -> figbox
 
   val rotate: float -> figbox -> figbox
-
-% align
-  val align-left : float
-  val align-center : float
-  val align-right : float
-  val align-top : float
-  val align-bottom : float
 
 % commands
   direct +fig-center : [figbox] block-cmd
@@ -51,11 +44,25 @@ module FigBox : sig
 
   direct \fig-inline : [float?; figbox] inline-cmd
 
+% sep の option 引数に用いられる strokef
+  val stroke-line: length -> color -> (length * length) -> (length * length) -> graphics list
+
+% align
+  val align-left : float
+  val align-center : float
+  val align-right : float
+  val align-top : float
+  val align-bottom : float
+
 end = struct
+
+  type gapinfo =
+    | HorizontalGap of length * length  % 水平にものを並べる際に生じる gap。引数は間に置くべき箱の高さと深さ。
+    | VerticalGap of length             % 鉛直にものを並べる際に生じる gap。引数は間に置くべき箱の幅。
 
   type figbox =
     | Box of context -> inline-boxes
-    | AxisDependingBox of bool -> context -> inline-boxes
+    | AxisDependingBox of gapinfo -> context -> inline-boxes
 
   % FigBox.figbox を inline-boxes 型に変換する．
   % embed-math みたいな interface にしたかった．
@@ -64,10 +71,25 @@ end = struct
       | Box(embedf) -> embedf ctx
       | AxisDependingBox(embedf) -> inline-nil
 
-  let embed-gap is-horizontal ctx fb =
+  % let embed-gap is-horizontal ctx fb =
+  %   match fb with
+  %     | Box(embedf) -> embedf ctx
+  %     | AxisDependingBox(embedf) -> embedf is-horizontal ctx
+
+  type interimbox =
+    | InterImBox of inline-boxes
+    | InterImAxisDependingBox of gapinfo -> context -> inline-boxes
+
+  % まずinline-boxes に convert
+  let convert-box-to-ib ctx fb =
     match fb with
-      | Box(embedf) -> embedf ctx
-      | AxisDependingBox(embedf) -> embedf is-horizontal ctx
+    | Box(embedf) -> InterImBox(embedf ctx)
+    | AxisDependingBox(embedf) -> InterImAxisDependingBox(embedf)
+
+  let embed-interimbox gapinfo ctx fb =
+    match fb with
+    | InterImBox(ib) -> ib
+    | InterImAxisDependingBox(embedf) -> embedf gapinfo ctx
 
   % 定数
 
@@ -76,6 +98,10 @@ end = struct
   let align-center = 0.5
   let align-top    = 1.0
   let align-bottom = 0.0
+
+  % strokef
+
+  let stroke-line lwid clr pt1 pt2 = [stroke lwid clr (Gr.line pt1 pt2)]
 
 % FigBox.figbox 型の新規作成
   % ユーザが画像を読み込むときに使える統一的な関数．
@@ -205,26 +231,27 @@ end = struct
     Box(embedf)
 
   let gap len =
-    let embedf is-horizontal ctx =
-      if is-horizontal then
-        inline-skip len
-      else
-        inline-graphics 0pt len 0pt (fun (x, y) -> [])
+    let embedf gapinfo ctx =
+      match gapinfo with
+      | HorizontalGap(_, _) -> inline-skip len
+      | VerticalGap(_) -> inline-graphics 0pt len 0pt (fun (x, y) -> [])
     in
     AxisDependingBox(embedf)
 
-  let sep ?:lwid ?:clr len =
-    let lwid = lwid |> Option.from 0.5pt in
-    let clr = clr |> Option.from (Color.black) in
-    let embedf is-horizontal ctx =
-      if is-horizontal then
-        inline-graphics 0pt len 0pt (fun (x, y) -> [
-          stroke lwid clr (Gr.line (x, y) (x, y +' len))
-        ])
-      else
-        inline-graphics len 0pt 0pt (fun (x, y) -> [
-          stroke lwid clr (Gr.line (x, y) (x +' len, y))
-        ])
+  let sep ?:strokef len =
+    let strokef = strokef |> Option.from (stroke-line 0.5pt Color.black) in
+    let embedf gapinfo ctx =
+      match gapinfo with
+      | HorizontalGap(ht, dp) ->
+          let half-len = len *' 0.5 in
+          inline-graphics len ht dp (fun (x, y) ->
+             strokef (x +' half-len, y -' dp) (x +' half-len, y +' ht)
+          )
+      | VerticalGap(wid) ->
+          let half-len = len *' 0.5 in
+          inline-graphics wid half-len half-len (fun (x, y) ->
+              strokef (x, y) (x +' wid, y)
+          )
     in
     AxisDependingBox(embedf)
 
@@ -237,6 +264,14 @@ end = struct
       ( max-length wid1 wid2, max-length ht1 ht2, max-length dp1 dp2)
     in
     metrics-lst |> List.fold-left max-metrics (0pt, 0pt, 0pt)
+
+  let get-max-metrics-of-interimbox boxlst =
+    let convert-ib box =
+      match box with
+      | InterImBox(ib) -> ib
+      | InterImAxisDependingBox(_) -> inline-graphics 0pt 0pt 0pt (fun _ -> [])
+    in
+    boxlst |> List.map convert-ib |> get-max-metrics
 
   % 高さ ht, 深さ dp になるように ib にマージンをつける．
   % al が 0.0 のときは下揃え． 1.0 のときは上揃え．
@@ -262,8 +297,12 @@ end = struct
   let hconcat ?:al fblst =
     let embedf ctx =
       let al = Option.from 0. al in
-      let iblst = fblst |> List.map (embed-gap true ctx) in
-      let (_, ht, dp) = get-max-metrics iblst in
+
+      let interimboxlst = fblst |> List.map (convert-box-to-ib ctx) in
+      let (_, ht, dp) = get-max-metrics-of-interimbox interimboxlst in
+      let gap-info = HorizontalGap(ht, dp) in
+      let iblst = interimboxlst |> List.map (embed-interimbox gap-info ctx) in
+
       let iblst-aligned = iblst |> List.map (valign ht dp al) in
       iblst-aligned |> List.fold-left (++) inline-nil
     in
@@ -272,12 +311,26 @@ end = struct
   let vconcat ?:al fblst =
     let embedf ctx =
       let al = Option.from 0. al in
-      let iblst = fblst |> List.map (embed-gap false ctx) in
-      let (wid, _, _) = get-max-metrics iblst in
+
+      let interimboxlst = fblst |> List.map (convert-box-to-ib ctx) in
+      let (wid, _, _) = get-max-metrics-of-interimbox interimboxlst in
+      let gap-info = VerticalGap(wid) in
+      let iblst = interimboxlst |> List.map (embed-interimbox gap-info ctx) in
+
       let iblst-aligned = iblst |> List.map (halign wid al) in
       line-stack-bottom iblst-aligned
     in
     Box(embedf)
+
+  % let vconcat ?:al fblst =
+  %   let embedf ctx =
+  %     let al = Option.from 0. al in
+  %     let iblst = fblst |> List.map (embed-gap false ctx) in
+  %     let (wid, _, _) = get-max-metrics iblst in
+  %     let iblst-aligned = iblst |> List.map (halign wid al) in
+  %     line-stack-bottom iblst-aligned
+  %   in
+  %   Box(embedf)
 
   let glass-box ?:als wid ht fb =
     let embedf ctx =
@@ -356,6 +409,8 @@ end = struct
   %   in
   %   ib-mark
 
+  let empty-deco _ _ _ _ = []
+
   let-block ctx +fig-on-right ?:margin fb bt =
     let margin = Option.from 20pt margin in
     let ib = embed-figure ctx fb in
@@ -382,7 +437,7 @@ end = struct
       [ draw-text (x, y +' h -' ib-ht) ib ]
     in
     let ib-content =
-      block-frame-breakable ctx pads (deco, deco, deco, deco)
+      block-frame-breakable ctx pads (deco, deco, empty-deco, empty-deco)
         (fun ctx -> read-block ctx bt)
     in
     ib-content
@@ -406,6 +461,5 @@ end = struct
     let dp-inner = 0pt *' (1. -. align) +' (ht -' fsize) *' align in
     inline-graphics wid ht-inner dp-inner
       (fun (x, y) -> [draw-text (x, y -' dp-inner) ib])
-
 
 end
