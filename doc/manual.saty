@@ -74,7 +74,7 @@ document (|
   }
 
   +code(```
-    @require: figbox
+    @require: figbox/figbox
 
     open FigBox
   ```);
