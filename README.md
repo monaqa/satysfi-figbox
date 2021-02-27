@@ -23,6 +23,8 @@ open FigBox
 
 ## Example
 
+(This code uses [easytable](https://github.com/monaqa/satysfi-easytable) package.)
+
 ```satysfi
 +fig-on-right(
   let table =
