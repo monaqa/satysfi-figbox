@@ -1,7 +1,7 @@
 @require: base/list-ext
 @require: gr
 @require: option
-@require: color
+@require: base/color-ext
 
 module FigBox : sig
 

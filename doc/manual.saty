@@ -14,7 +14,7 @@ open EasyTableAlias
 
 let-inline \link url text =
   let ibf ctx =
-    let ctx = ctx |> set-text-color Color.blue in
+    let ctx = ctx |> set-text-color (Color.of-css `darkblue`) in
     read-inline ctx text
   in
   {\href(url){\eval(ibf);}}
@@ -395,6 +395,8 @@ document (|
     +p{
       `gap` 関数の代わりに `sep` 関数を用いると、
       間に隙間を空けるだけでなく、さらに分割線を引くことができます。
+      線幅・線の色などを変えたい場合はオプション引数で指定します。
+      以下は \link(`https://github.com/nyuichi/satysfi-base`){`base/color-ext` パッケージ}を用いて色を指定した例です。
     }
 
     +example(```
@@ -410,7 +412,7 @@ document (|
           sep 10pt;
           hconcat [
             include-image 100pt `fig/example.pdf`;
-            sep 30pt;
+            sep ?:(stroke-line 2pt (Color.of-css `lightgreen`)) 30pt;
             include-image ?:4 100pt `fig/example.pdf`;
           ];
         ]
@@ -428,7 +430,7 @@ document (|
           sep 10pt;
           hconcat [
             include-image 100pt `fig/example.pdf`;
-            sep 30pt;
+            sep ?:(stroke-line 2pt (Color.of-css `lightgreen`)) 30pt;
             include-image ?:4 100pt `fig/example.pdf`;
           ];
         ]
