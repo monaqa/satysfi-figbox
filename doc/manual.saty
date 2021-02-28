@@ -12,6 +12,13 @@
 open FigBox
 open EasyTableAlias
 
+let-inline \link url text =
+  let ibf ctx =
+    let ctx = ctx |> set-text-color Color.blue in
+    read-inline ctx text
+  in
+  {\href(url){\eval(ibf);}}
+
 let-block ctx +ctx ctxf bt = read-block (ctxf ctx) bt
 
 let document record content = StdJaReport.document record '<%
@@ -70,7 +77,6 @@ document (|
 
   +p{
     figbox パッケージを用いるには冒頭に以下のように記述します。
-    以後のすべての例で figbox パッケージが適切にインポートされていることを前提とします。
   }
 
   +code(```
@@ -97,34 +103,43 @@ document (|
   >%
 
   +p{
-    figbox パッケージが提供するのは `+fig-center` コマンドと `textbox-with-width` 関数です。
-    `+fig-center` は引数として与えられた `figbox` 型の図を紙面に中央揃えで配置します。
-    それに対して `textbox-with-width` は `length -> inline-text -> figbox` 型の関数であり、
+    上のコードのうち、figbox パッケージが提供しているものは2つあります。
+    % `+fig-center` コマンド及び `textbox-with-width` 関数です。
+    1つは `+fig-center` コマンドであり、これは引数として与えられた「図」を紙面に中央揃えで配置します。
+    もう1つは `textbox-with-width` 関数であり、これは
+    % `length -> inline-text -> figbox` 型の関数であり、
     指定した長さを横幅に、指定したテキストを内容に持つよう行分割された段落を「図」として生成します。
   }
+
   +p{
-    このように、figbox パッケージが提供する機能は主に以下の2種類です。
+    上の説明で「図」と表現しましたが、その実体は `figbox` という型です。
+    すなわち、`+fig-center` は `figbox` 型の値を引数に取るコマンド、
+    `textbox-with-width` は `length -> inline-text -> figbox` 型の関数ということになります。
+  }
+
+  +p{
+    figbox パッケージでは、主に以下の2種類のコマンド又は関数を提供します。
   }
 
   +listing{
-    * `figbox` 型の値を、インラインテキストやブロックテキストとして埋め込むためのコマンド。
-    * `figbox` 型の値を生成・変換する函数。
+    * `figbox` 型の値を、インラインテキストやブロックテキストとして埋め込むためのコマンド（例： `+fig-center`）
+    * `figbox` 型の値を生成・変換する函数（例： `textbox-with-width`）
   }
 
+  % +p{
+  %   % 上の説明から分かる通り、
+  %   % figbox パッケージではパッケージ名そのままの `figbox` という型がきわめて重要な役割を担っています。
+  %   % `figbox` は図の内容そのものを表す型です。もう少し詳しく述べると、
+  %   % 「テキスト処理文脈を受け取ることで、図として出力できるようになるもの」となります。
+  %   % そういう意味では `inline-text` 型や `ctx -> inline-boxes` 型に近いかもしれません。
+  % }
   +p{
-    上の説明から分かる通り、
-    figbox パッケージではパッケージ名そのままの `figbox` という型がきわめて重要な役割を担っています。
-    % `figbox` は図の内容そのものを表す型です。もう少し詳しく述べると、
-    % 「テキスト処理文脈を受け取ることで、図として出力できるようになるもの」となります。
-    % そういう意味では `inline-text` 型や `ctx -> inline-boxes` 型に近いかもしれません。
-  }
-  +p{
-    `figbox` を受け取って埋め込むコマンドは `+fig-center` だけではありません。
-    後に述べるように、図を文書内の適切な位置に配置するための様々なコマンドが提供されています。
-
-    また、`figbox` を生成するための関数も同様に様々なものがあります。
-    単に `figbox` を生成するだけでなく、
-    複数の `figbox` を組み合わせて新たな `figbox` を生成する、といったことも自由にできます。
+    % `figbox` を受け取って埋め込むコマンドは `+fig-center` だけではありません。
+    % 後に述べるように、図を文書内の適切な位置に配置するための様々なコマンドが提供されています。
+    %
+    % また、`figbox` を生成するための関数も同様に様々なものがあります。
+    % 単に `figbox` を生成するだけでなく、
+    % 複数の `figbox` を組み合わせて新たな `figbox` を生成する、といったことも自由にできます。
 
     figbox パッケージでは、これらのインターフェースによって
     「複雑な図を文書内の自由な位置に配置する」ことを実現しています。
@@ -139,8 +154,8 @@ document (|
 
     +p{
       「図」として思い浮かぶ代表的なものは画像でしょう。
-      画像は2種類の関数、`include-image` 及び `include-image-with-height` を用いて読み込むことができます。
-      `include-image` は画像の横幅を、 `include-image-with-height` は縦幅を指定します。
+      本パッケージにおいて、画像は2種類の関数`include-image` 及び `include-image-with-height` を用いて読み込むことができます。
+      `include-image` では画像の横幅、 `include-image-with-height` では縦幅を用いて画像のサイズを決定します。
     }
 
     +example(```
@@ -153,9 +168,9 @@ document (|
 
     +p{
       上の例では JPEG 形式の図を読み込みましたが、
-      同じ関数にて PDF 形式の図を指定することもできます。
+      同じ関数を用いて PDF 形式の図を指定することもできます。
       PDF の場合はデフォルトで1ページ目の図を読み込むものの、
-      オプション引数にて読み込みたいページ数を与えることもできます。
+      オプション引数にページ番号を与えることで1ページ目以外の図を読み込むことも可能です。
     }
 
     +example(```
@@ -169,9 +184,10 @@ document (|
     >%
 
     +p{
-      \SATySFi; がサポートしている画像の形式は JPEG 及び PDF ですが、
-      上で挙げた関数はファイルの拡張子から画像の形式を自動で判断しています。
-      もちろん、 `include-image-with-height` でも同様のことができます。
+      これらの関数は、画像の形式が JPEG と PDF のどちらであるかをファイルの拡張子から判断しています
+      \footnote{v0.0.6 時点で \SATySFi; が画像の読み込みをサポートしているフォーマットは JPEG と PDF の2種類です。}
+      。JPEG と PDF で異なる関数を使い分ける必要はありません。
+      % もちろん、 `include-image-with-height` でも同様のことができます。
     }
 
     +p{
@@ -187,7 +203,7 @@ document (|
     >%
 
     +p{
-      テキストや数式をはじめとしたインラインテキストやブロックテキストも `figbox` 型に変換することができます。
+      最初の例で示したとおり、テキストや数式をはじめとしたインラインテキストやブロックテキストも `figbox` 型に変換することができます。
     }
 
     +example(```
@@ -203,7 +219,7 @@ document (|
     +p{
       SATySFi では表やグラフィックスもインラインテキストに埋め込むことができるため、
       実質何でもあり、といえるかもしれません。
-      以下は `easytable` パッケージを用いて組んだ表を中央揃えにする例です。
+      以下は \link(`https://github.com/monaqa/satysfi-easytable`){`easytable` パッケージ}を用いて組んだ表を中央揃えにする例です。
     }
 
     +example(```
@@ -252,9 +268,9 @@ document (|
   >%
 
   +section{`figbox` を変換・結合する関数}<%
-    
+
     +p{
-      ここまでの例では、 figbox パッケージをわざわざ用いる有難みが感じられなかったかもしれません。
+      ここまでの例では、 figbox パッケージをわざわざ用いる有難みがさほど感じられなかったかもしれません。
       このパッケージの強みは、上で述べた関数を使って得られた「図」をいくつも組み合わせ、
       より複雑な図を簡単に作成できる点にあります。
     }
@@ -370,7 +386,7 @@ document (|
 
     +p{
       `gap` 関数の代わりに `sep` 関数を用いると、
-      間に隙間を空けた後に線を引くことができます。
+      間に隙間を空けるだけでなく、さらに分割線を引くことができます。
     }
 
     +example(```
@@ -412,8 +428,9 @@ document (|
     >%
 
     +p{
+      `hconcat` や `vconcat` を使用する際、
       オプション引数で `align-left`, `align-center`, `align-right`, `align-top`, `align-bottom` の
-      5種類のいずれかを指定することで、揃え方を変えることができます。
+      いずれかを指定すると、図を並べるときの揃え方を変えることができます。
     }
 
     +example(```
@@ -581,17 +598,25 @@ document (|
 
 
     +p{
-      `+fig-abs-pos` 及び `\fig-abs-pos` は紙面への絶対座標を指定して描画することができます。
+      `+fig-abs-pos` 及び `\fig-abs-pos` は紙面に対する絶対座標を指定して描画するためのコマンドです。
       それ自身はそれぞれ大きさ0のブロックボックス列及びインラインボックス列としてふるまいます。
     }
 
     +example(```
-      +fig-abs-pos((30pt, 200pt))(
-        include-image-with-height 100pt `fig/example2.jpg`
+      +fig-abs-pos((30pt, 50pt))(
+        vconcat [
+          include-image-with-height 100pt `fig/example2.jpg`;
+          gap 5pt;
+          textbox {↑絶対座標を指定して描画する例。}
+        ]
       );
     ```)<%
-      +fig-abs-pos((30pt, 200pt))(
-        include-image-with-height 100pt `fig/example2.jpg`
+      +fig-abs-pos((30pt, 50pt))(
+        vconcat [
+          include-image-with-height 100pt `fig/example2.jpg`;
+          gap 5pt;
+          textbox {↑絶対座標を指定して描画する例。}
+        ]
       );
     >%
 
@@ -678,6 +703,35 @@ document (|
       +p{ \jugem; }
     >%
 
+
+    +p{
+      `+fig-on-right`, `+fig-on-left` ともに `length` 型のオプション引数を取り、
+      図と本文の間の余白を調整することができます。 デフォルトは 20pt です。
+    }
+
+    +example(```
+      +p{ \jugem; }
+      +fig-on-right?:(0pt)(include-image 120pt `fig/example1.jpg`)<
+        +p{ \jugem; }
+      >
+      +fig-on-right(include-image 120pt `fig/example1.jpg`)<
+        +p{ \jugem; }
+      >
+      +fig-on-right?:(40pt)(include-image 120pt `fig/example1.jpg`)<
+        +p{ \jugem; }
+      >
+    ```)<%
+      +p{ \jugem; }
+      +fig-on-right?:(0pt)(include-image 120pt `fig/example1.jpg`)<
+        +p{ \jugem; }
+      >
+      +fig-on-right(include-image 120pt `fig/example1.jpg`)<
+        +p{ \jugem; }
+      >
+      +fig-on-right?:(40pt)(include-image 120pt `fig/example1.jpg`)<
+        +p{ \jugem; }
+      >
+    >%
 
   >%
 
