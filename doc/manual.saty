@@ -210,10 +210,18 @@ document (|
     +fig-center(textbox {The quick brown fox jumps over the lazy dog.});
     +fig-center(textbox {${x = \frac{-b\pm \sqrt{b^2 - 4ac}}{2a}}});
     +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+    +fig-center(textblock 150pt '<
+      +p{The quick brown fox jumps over the lazy dog.}
+      +p{The quick brown fox jumps over the lazy dog.}
+    >);
     ```)<%
     +fig-center(textbox {The quick brown fox jumps over the lazy dog.});
     +fig-center(textbox {${x = \frac{-b\pm \sqrt{b^2 - 4ac}}{2a}}});
     +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+    +fig-center(textblock 150pt '<
+      +p{The quick brown fox jumps over the lazy dog.}
+      +p{The quick brown fox jumps over the lazy dog.}
+    >);
     >%
 
     +p{
