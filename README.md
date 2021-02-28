@@ -4,7 +4,7 @@ A SATySFi package that creates charts and places them in inappropriate positions
 
 ## Installation
 
-Use [Satyrograpohs](https://github.com/na4zagin3/satyrographos).
+Use [Satyrographos](https://github.com/na4zagin3/satyrographos).
 
 ```
 opam install satysfi-figbox
