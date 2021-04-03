@@ -15,6 +15,7 @@ module FigBox : sig
   val textbox: (context -> context)?-> inline-text -> figbox
   val textbox-with-width: (context -> context)?-> length -> inline-text -> figbox
   val textblock: (context -> context)?-> length -> block-text -> figbox
+  val inlinebox: inline-boxes -> figbox
 
 % FigBox.figbox の変換
   val hconcat : float?-> figbox list -> figbox
@@ -190,6 +191,7 @@ end = struct
     in
     Box(embedf)
 
+  let inlinebox ib = Box(fun _ -> ib)
 
 % FigBox の変換
 
