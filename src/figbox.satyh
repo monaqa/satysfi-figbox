@@ -36,7 +36,10 @@ module FigBox : sig
 
   val rotate: float -> figbox -> figbox
 
-% commands
+% commands / embedding
+
+  val embed-figbox: context -> figbox -> inline-boxes
+
   direct +fig-center : [figbox] block-cmd
   direct +fig-block : [float?; figbox] block-cmd
   % direct \fig-on-right : [figbox] inline-cmd
@@ -69,7 +72,7 @@ end = struct
 
   % FigBox.figbox を inline-boxes 型に変換する．
   % embed-math みたいな interface にしたかった．
-  let embed-figure ctx fb =
+  let embed-figbox ctx fb =
     match fb with
       | Box(embedf) -> embedf ctx
       | AxisDependingBox(embedf) -> inline-nil
@@ -132,10 +135,10 @@ end = struct
   let include-image-with-height ?:pg ht pth =
     let embedf ctx = 
       let pg = Option.from 1 pg in
-      let ib = embed-figure ctx (include-image ?:pg 1pt pth) in
+      let ib = embed-figbox ctx (include-image ?:pg 1pt pth) in
       let (_, ht-norm, _) = get-natural-metrics ib in
       let scale = ht /' ht-norm in
-      embed-figure ctx (include-image ?:pg (1pt *' scale) pth)
+      embed-figbox ctx (include-image ?:pg (1pt *' scale) pth)
     in
     Box(embedf)
 
@@ -205,7 +208,7 @@ end = struct
         let bot-mgn = inline-graphics 0pt bot 0pt (fun (_, _) -> []) in
         line-stack-bottom [
           top-mgn ++ inline-fil;  % inline-fil は underfull を防ぐため
-          embed-figure ctx fb;
+          embed-figbox ctx fb;
           bot-mgn ++ inline-fil;  % inline-fil は underfull を防ぐため
         ]
       in
@@ -219,15 +222,15 @@ end = struct
 
   let draft fb =
     let embedf ctx =
-      let ib = embed-figure ctx fb in
+      let ib = embed-figbox ctx fb in
       let (wid, ht, dp) = get-natural-metrics ib in
-      embed-figure ctx (dummy-box ?:dp wid ht)
+      embed-figbox ctx (dummy-box ?:dp wid ht)
     in
     Box(embedf)
 
   let shift xshift yshift fb =
     let embedf ctx =
-      let ib = embed-figure ctx fb in
+      let ib = embed-figbox ctx fb in
       let (wid, ht, dp) = get-natural-metrics ib in
       inline-graphics wid ht dp (fun (x, y) -> [
         draw-text (x +' xshift, y +' yshift) ib
@@ -340,20 +343,20 @@ end = struct
   let glass-box ?:als wid ht fb =
     let embedf ctx =
       let (h-al, v-al) = Option.from (0.5, 0.5) als in
-      let ib-fig = embed-figure ctx fb in
+      let ib-fig = embed-figbox ctx fb in
       let (wid-fig, ht-fig, dp-fig) = get-natural-metrics ib-fig in
       let left-mgn = (max-length 0pt (wid -' wid-fig)) *' h-al in
       let right-mgn = (max-length 0pt (wid -' wid-fig)) *' (1. -. h-al) in
       let top-mgn = (ht -' ht-fig) *' (1. -. v-al) in
       let bot-mgn = (ht -' ht-fig) *' v-al in
       let fb = margin left-mgn right-mgn top-mgn bot-mgn fb in
-      embed-figure ctx fb
+      embed-figbox ctx fb
     in
     Box(embedf)
 
   let frame thk clr fb =
     let embedf ctx =
-      let ib-fig = embed-figure ctx fb in
+      let ib-fig = embed-figbox ctx fb in
       let (wid, ht, dp) = get-natural-metrics ib-fig in
       inline-graphics wid ht dp (fun (x, y) -> [
         draw-text (x, y) ib-fig;
@@ -364,7 +367,7 @@ end = struct
 
   let bgcolor clr fb =
     let embedf ctx =
-      let ib-fig = embed-figure ctx fb in
+      let ib-fig = embed-figbox ctx fb in
       let (wid, ht, dp) = get-natural-metrics ib-fig in
       inline-graphics wid ht dp (fun (x, y) -> [
         fill clr (Gr.rectangle (x, y -' dp) (x +' wid, y +' ht));
@@ -375,7 +378,7 @@ end = struct
 
   let rotate angle fb =
     let embedf ctx =
-      let ib-fig = embed-figure ctx fb in
+      let ib-fig = embed-figbox ctx fb in
       let gr =
         draw-text (0pt, 0pt) ib-fig
           |> Gr.rotate-graphics (0pt, 0pt) angle
@@ -392,7 +395,7 @@ end = struct
 
   let-block ctx +fig-block ?:al fb =
     let al = Option.from 0.5 al in
-    let ib-fig = embed-figure ctx fb in
+    let ib-fig = embed-figbox ctx fb in
     let (wid-fig, _, _) = get-natural-metrics ib-fig in
     let left-margin = ((get-text-width ctx) -' wid-fig) *' al in
     line-break false false ctx ((inline-skip left-margin) ++ ib-fig ++ inline-fil)
@@ -402,7 +405,7 @@ end = struct
   >
 
   % let-inline ctx \fig-on-right fb =
-  %   let ib = embed-figure ctx fb in
+  %   let ib = embed-figbox ctx fb in
   %   let (wid, ht, dp) = get-natural-metrics ib in
   %   let ib-mark =
   %     inline-graphics 0pt 0pt 0pt (fun (x, y) -> [
@@ -418,7 +421,7 @@ end = struct
 
   let-block ctx +fig-on-right ?:margin fb bt =
     let margin = Option.from 20pt margin in
-    let ib = embed-figure ctx fb in
+    let ib = embed-figbox ctx fb in
     let (ib-wid, ib-ht, ib-dp) = get-natural-metrics ib in
     let pads = (0pt, ib-wid +' margin, 0pt, 0pt) in
     let textwid = get-text-width ctx in
@@ -433,7 +436,7 @@ end = struct
 
   let-block ctx +fig-on-left ?:margin fb bt =
     let margin = Option.from 20pt margin in
-    let ib = embed-figure ctx fb in
+    let ib = embed-figbox ctx fb in
     let (ib-wid, ib-ht, ib-dp) = get-natural-metrics ib in
     let pads = (ib-wid +' margin, 0pt, 0pt, 0pt) in
     let deco (x, y) w h d =
@@ -446,7 +449,7 @@ end = struct
     ib-content
 
   let fig-abs-pos ctx pt fb =
-    let ib = embed-figure ctx fb in
+    let ib = embed-figbox ctx fb in
     inline-graphics 0pt 0pt 0pt (fun _ -> [draw-text pt ib])
 
   let-inline ctx \fig-abs-pos = fig-abs-pos ctx
@@ -457,7 +460,7 @@ end = struct
 
   let-inline ctx \fig-inline ?:align fb =
     let align = Option.from 0. align in
-    let ib = embed-figure ctx fb in
+    let ib = embed-figbox ctx fb in
     let fsize = get-font-size ctx in
     let (wid, ht, dp) = get-natural-metrics ib in
     let ht-inner = ht *' (1. -. align) +' fsize *' align in
