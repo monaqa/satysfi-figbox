@@ -41,7 +41,9 @@ module FigBox : sig
   val embed-figbox: context -> figbox -> inline-boxes
 
   direct +fig-center : [figbox] block-cmd
+  direct \fig-center : [figbox] inline-cmd
   direct +fig-block : [float?; figbox] block-cmd
+  direct \fig-block : [float?; figbox] inline-cmd
   % direct \fig-on-right : [figbox] inline-cmd
   direct +fig-on-right : [length?; figbox; block-text] block-cmd
   direct +fig-on-left : [length?; figbox; block-text] block-cmd
@@ -403,6 +405,16 @@ end = struct
   let-block +fig-center fb = '<
     +fig-block?:(0.5)(fb);
   >
+
+  let-inline ctx \fig-block ?:al fb =
+    let bt = match al with
+      | Some(al) -> '<+fig-block?:(al)(fb);>
+      | None     -> '<+fig-block(fb);>
+    in
+    let ib-block = embed-block-breakable ctx (read-block ctx bt) in
+    inline-fil ++ ib-block ++ omit-skip-after
+
+  let-inline \fig-center fb = {\fig-block?:(0.5)(fb);}
 
   % let-inline ctx \fig-on-right fb =
   %   let ib = embed-figbox ctx fb in
