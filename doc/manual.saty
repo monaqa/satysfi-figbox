@@ -97,9 +97,15 @@ document (|
   }
 
   +example(```
-  +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+  +fig-center(
+    textbox-with-width 100pt
+      {The quick brown fox jumps over the lazy dog.}
+  );
   ```)<%
-  +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+  +fig-center(
+    textbox-with-width 100pt
+      {The quick brown fox jumps over the lazy dog.}
+  );
   >%
 
   +p{
@@ -225,8 +231,6 @@ document (|
     >%
 
     +p{
-      SATySFi では表やグラフィックスもインラインテキストに埋め込むことができるため、
-      実質何でもあり、といえるかもしれません。
       以下は \link(`https://github.com/monaqa/satysfi-easytable`){`easytable` パッケージ}を用いて組んだ表を中央揃えにする例です。
     }
 
@@ -272,6 +276,13 @@ document (|
             {The quick brown fox jumps over the lazy dog.});
     >%
 
+    +p{
+      インラインボックス列を figbox に変換したいときは `inlinebox` 関数または `rawbox` 関数を用います。
+      `inlinebox` 関数は `inline-boxes -> figbox` という型を持ち、
+      `rawbox` 関数は `(context -> inline-boxes) -> figbox` という型を持っています。
+      これらはエンドユーザがマークアップの場で直接用いるというよりも、
+      主にパッケージ開発者が figbox の API を呼び出す際に用いることを想定しています。
+    }
 
   >%
 
@@ -632,6 +643,8 @@ document (|
 
     +p{
       `\fig-inline` を使えば、通常のインラインテキストの中に `figbox` を埋め込むことができます。
+      % テキストや数式の装飾には `inline-frame-inner` や `inline-frame-breakable` などを用いたほうが筋が良いものの、
+      画像やロゴをテキスト中に入れるときなどに重宝するかもしれません。
     }
 
     +example(```
@@ -665,11 +678,26 @@ document (|
       ); という式を導いたのである。}
     >%
 
-
     +p{
-      テキストや数式の装飾には `inline-frame-inner` や `inline-frame-breakable` などを用いたほうが筋が良いものの、
-      画像やロゴをテキスト中に入れるときなどに重宝するかもしれません。
+      箇条書きの中などインラインテキストから呼び出したいが別行立ての図にしたい場合は、
+      `+fig-block` や `+fig-center` のインライン版である `\fig-block` や `\fig-center` を用いることができます。
     }
+
+    +example(```
+      +p{つまり我々は \fig-block?:(align-right)(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+      +p{つまり我々は \fig-center(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+    ```)<%
+      +p{つまり我々は \fig-block?:(align-right)(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+      +p{つまり我々は \fig-center(
+        textbox{${E=mc^2}} |> hvmargin 5pt |> frame 1pt Color.red
+      ); という式を導いたのである。}
+    >%
 
     +p{
       `+fig-on-right` は段落の右側に figbox を配置する機能です。
