@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "satysfi-figbox"
-version: "0.1.1"
+version: "0.1.2"
 synopsis: "A SATySFi package for creating charts and placing them in inappropriate positions"
 description: """
 A SATySFi package that creates charts and places them in inappropriate positions in your document
