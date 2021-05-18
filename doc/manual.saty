@@ -197,6 +197,18 @@ document (|
     }
 
     +p{
+      本来、挿入する画像は縦または横の大きさを指定することによって画像のサイズが決まるものです。
+      しかし、挿入時に縦と横両方のサイズを指定することもできます。
+      この場合、画像はその縦横比に合うよう縦または横に拡大・縮小します。
+    }
+
+    +example(```
+    +fig-center(include-image-with-size 100pt 100pt `fig/example.pdf`);
+    ```)<%
+    +fig-center(include-image-with-size 100pt 100pt `fig/example.pdf`);
+    >%
+
+    +p{
       縦横の長さを指定して、ダミーの図を配置することもできます。
       図の大きさが判明してさえいれば、
       まだ図そのものが無くても図を除いたレイアウトが再現できて便利です。
@@ -576,8 +588,8 @@ document (|
     +p{
       `figbox` を変換する関数としては、その他にも図の背景色を指定する `bgcolor` などが用意されています。
       こちらもやはり `margin` 系の関数でマージンを指定しつつ使うのが良いでしょう。
-      また、figbox を回転させる `rotate` 関数もあります。
-      テキストや画像を回転させたいときに重宝するでしょう。
+      また、figbox を回転させる `rotate` 関数、縦横に拡大縮小する `scale` 関数もあります。
+      テキストや画像を回転・反転させたいときに重宝するでしょう。
     }
 
   >%
@@ -769,6 +781,35 @@ document (|
       +fig-on-right?:(40pt)(include-image 120pt `fig/example1.jpg`)<
         +p{ \jugem; }
       >
+    >%
+
+    +p{
+      箇条書きの中などインラインテキストから呼び出したい場合は
+      `\fig-on-right`, `\fig-on-left` を用います。
+    }
+
+    +example(```
+      +listing{
+        * \jugem;
+          \fig-on-right(include-image 120pt `fig/example1.jpg`)<
+            +p{\jugem;}
+          >
+        * \jugem;
+          \fig-on-left(include-image 120pt `fig/example1.jpg`)<
+            +p{\jugem;}
+          >
+      }
+    ```)<%
+      +listing{
+        * \jugem;
+          \fig-on-right(include-image 120pt `fig/example1.jpg`)<
+            +p{\jugem;}
+          >
+        * \jugem;
+          \fig-on-left(include-image 120pt `fig/example1.jpg`)<
+            +p{\jugem;}
+          >
+      }
     >%
 
   >%

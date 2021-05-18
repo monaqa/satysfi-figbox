@@ -11,6 +11,7 @@ module FigBox : sig
 % FigBox.figbox の新規作成
   val include-image : int?-> length -> string -> figbox
   val include-image-with-height : int?-> length -> string -> figbox
+  val include-image-with-size : int?-> length -> length -> string -> figbox
   val dummy-box: length ?-> length -> length -> figbox
   val textbox: (context -> context)?-> inline-text -> figbox
   val textbox-with-width: (context -> context)?-> length -> inline-text -> figbox
@@ -35,20 +36,22 @@ module FigBox : sig
   val bgcolor: color -> figbox -> figbox
 
   val rotate: float -> figbox -> figbox
+  val scale: float?-> float -> figbox -> figbox
 
 % commands / embedding
 
   val embed-figbox: context -> figbox -> inline-boxes
 
-  direct +fig-center : [figbox] block-cmd
-  direct \fig-center : [figbox] inline-cmd
-  direct +fig-block : [float?; figbox] block-cmd
-  direct \fig-block : [float?; figbox] inline-cmd
-  % direct \fig-on-right : [figbox] inline-cmd
+  direct +fig-center   : [figbox] block-cmd
+  direct \fig-center   : [figbox] inline-cmd
+  direct +fig-block    : [float?; figbox] block-cmd
+  direct \fig-block    : [float?; figbox] inline-cmd
   direct +fig-on-right : [length?; figbox; block-text] block-cmd
-  direct +fig-on-left : [length?; figbox; block-text] block-cmd
-  direct \fig-abs-pos : [(length * length); figbox] inline-cmd
-  direct +fig-abs-pos : [(length * length); figbox] block-cmd
+  direct \fig-on-right : [length?; figbox; block-text] inline-cmd
+  direct +fig-on-left  : [length?; figbox; block-text] block-cmd
+  direct \fig-on-left  : [length?; figbox; block-text] inline-cmd
+  direct \fig-abs-pos  : [(length * length); figbox] inline-cmd
+  direct +fig-abs-pos  : [(length * length); figbox] block-cmd
 
   direct \fig-inline : [float?; figbox] inline-cmd
 
@@ -135,12 +138,29 @@ end = struct
     Box(embedf)
 
   let include-image-with-height ?:pg ht pth =
-    let embedf ctx = 
+    let embedf ctx =
       let pg = Option.from 1 pg in
       let ib = embed-figbox ctx (include-image ?:pg 1pt pth) in
       let (_, ht-norm, _) = get-natural-metrics ib in
       let scale = ht /' ht-norm in
       embed-figbox ctx (include-image ?:pg (1pt *' scale) pth)
+    in
+    Box(embedf)
+
+  let include-image-with-size ?:pg ht wid pth =
+    let embedf ctx =
+      let pg = Option.from 1 pg in
+      let ib = embed-figbox ctx (include-image ?:pg wid pth) in
+      let (_, ht-orig, _) = get-natural-metrics ib in
+      let scale = ht /' ht-orig in
+      let gr =
+        draw-text (0pt, 0pt) ib
+          |> Gr.scale-graphics (0pt, 0pt) 1. scale
+      in
+      let ((xmin, ymin), (xmax, ymax)) = get-graphics-bbox gr in
+      inline-graphics (xmax -' xmin) (ymax -' ymin) 0pt (fun (x, y) -> [
+        gr |> shift-graphics (x -' xmin, y -' ymin)
+      ])
     in
     Box(embedf)
 
@@ -332,16 +352,6 @@ end = struct
     in
     Box(embedf)
 
-  % let vconcat ?:al fblst =
-  %   let embedf ctx =
-  %     let al = Option.from 0. al in
-  %     let iblst = fblst |> List.map (embed-gap false ctx) in
-  %     let (wid, _, _) = get-max-metrics iblst in
-  %     let iblst-aligned = iblst |> List.map (halign wid al) in
-  %     line-stack-bottom iblst-aligned
-  %   in
-  %   Box(embedf)
-
   let glass-box ?:als wid ht fb =
     let embedf ctx =
       let (h-al, v-al) = Option.from (0.5, 0.5) als in
@@ -392,6 +402,20 @@ end = struct
     in
     Box(embedf)
 
+  let scale ?:htratio wdratio fb =
+    let embedf ctx =
+      let htratio = htratio |> Option.from wdratio in
+      let ib-fig = embed-figbox ctx fb in
+      let gr =
+        draw-text (0pt, 0pt) ib-fig
+          |> Gr.scale-graphics (0pt, 0pt) wdratio htratio
+      in
+      let ((xmin, ymin), (xmax, ymax)) = get-graphics-bbox gr in
+      inline-graphics (xmax -' xmin) (ymax -' ymin) 0pt (fun (x, y) -> [
+        gr |> shift-graphics (x -' xmin, y -' ymin)
+      ])
+    in
+    Box(embedf)
 
 % Commands
 
@@ -416,19 +440,6 @@ end = struct
 
   let-inline \fig-center fb = {\fig-block?:(0.5)(fb);}
 
-  % let-inline ctx \fig-on-right fb =
-  %   let ib = embed-figbox ctx fb in
-  %   let (wid, ht, dp) = get-natural-metrics ib in
-  %   let ib-mark =
-  %     inline-graphics 0pt 0pt 0pt (fun (x, y) -> [
-  %       draw-text
-  %         (x +' (get-text-width ctx) -' wid,
-  %         y +' (ctx |> get-font-size) -' ht)
-  %           ib
-  %     ])
-  %   in
-  %   ib-mark
-
   let empty-deco _ _ _ _ = []
 
   let-block ctx +fig-on-right ?:margin fb bt =
@@ -446,6 +457,14 @@ end = struct
     in
     ib-content
 
+  let-inline ctx \fig-on-right ?:margin fb bt =
+    let bt = match margin with
+      | Some(margin) -> '<+fig-on-right?:(margin)(fb)(bt);>
+      | None         -> '<+fig-on-right(fb)(bt);>
+    in
+    let ib-block = embed-block-breakable ctx (read-block ctx bt) in
+    inline-fil ++ ib-block ++ omit-skip-after
+
   let-block ctx +fig-on-left ?:margin fb bt =
     let margin = Option.from 20pt margin in
     let ib = embed-figbox ctx fb in
@@ -459,6 +478,14 @@ end = struct
         (fun ctx -> read-block ctx bt)
     in
     ib-content
+
+  let-inline ctx \fig-on-left ?:margin fb bt =
+    let bt = match margin with
+      | Some(margin) -> '<+fig-on-left?:(margin)(fb)(bt);>
+      | None         -> '<+fig-on-left(fb)(bt);>
+    in
+    let ib-block = embed-block-breakable ctx (read-block ctx bt) in
+    inline-fil ++ ib-block ++ omit-skip-after
 
   let fig-abs-pos ctx pt fb =
     let ib = embed-figbox ctx fb in
