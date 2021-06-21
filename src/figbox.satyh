@@ -13,9 +13,9 @@ module FigBox : sig
   val include-image-with-height : int?-> length -> string -> figbox
   val include-image-with-size : int?-> length -> length -> string -> figbox
   val dummy-box: length ?-> length -> length -> figbox
-  val textbox: (context -> context)?-> inline-text -> figbox
-  val textbox-with-width: (context -> context)?-> length -> inline-text -> figbox
-  val textblock: (context -> context)?-> length -> block-text -> figbox
+  val textbox: (context -> context) list?-> inline-text -> figbox
+  val textbox-with-width: (context -> context) list?-> length -> inline-text -> figbox
+  val textblock: (context -> context) list?-> length -> block-text -> figbox
 
   val inlinebox: inline-boxes -> figbox
   val rawbox: (context -> inline-boxes) -> figbox
@@ -192,16 +192,19 @@ end = struct
     in
     Box(embedf)
 
-  let textbox ?:ctxf it =
+  let fold-ctxf ctxflst ctx =
+    ctxflst |> List.fold-left (fun ctx ctxf -> ctxf ctx) ctx
+
+  let textbox ?:ctxflst it =
     let embedf ctx =
-      let ctxf = Option.from (fun x -> x) ctxf in
-          read-inline (ctxf ctx) it
+      let ctxf = ctxflst |> Option.from [] |> fold-ctxf in
+      read-inline (ctxf ctx) it
     in
     Box(embedf)
 
-  let textbox-with-width ?:ctxf wid it =
+  let textbox-with-width ?:ctxflst wid it =
     let embedf ctx =
-      let ctxf = Option.from (fun x -> x) ctxf in
+      let ctxf = ctxflst |> Option.from [] |> fold-ctxf in
       embed-block-bottom (ctxf ctx) wid (
         fun ctx -> line-break false false ctx
           (read-inline ctx it ++ inline-fil)
@@ -209,9 +212,9 @@ end = struct
     in
     Box(embedf)
 
-  let textblock ?:ctxf wid bt =
+  let textblock ?:ctxflst wid bt =
     let embedf ctx =
-      let ctxf = Option.from (fun x -> x) ctxf in
+      let ctxf = ctxflst |> Option.from [] |> fold-ctxf in
       embed-block-bottom (ctxf ctx) wid (
         fun ctx -> read-block ctx bt
       )
