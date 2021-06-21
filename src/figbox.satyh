@@ -229,13 +229,19 @@ end = struct
   let margin left right top bot fb =
     let embedf ctx =
       let ib =
-        let top-mgn = inline-graphics 0pt top 0pt (fun (_, _) -> []) in
-        let bot-mgn = inline-graphics 0pt bot 0pt (fun (_, _) -> []) in
-        line-stack-bottom [
-          top-mgn ++ inline-fil;  % inline-fil は underfull を防ぐため
-          embed-figbox ctx fb;
-          bot-mgn ++ inline-fil;  % inline-fil は underfull を防ぐため
-        ]
+        let ib-figbox = embed-figbox ctx fb in
+        if top <' 0pt || bot <' 0pt then
+          let (wid, ht, dp) = get-natural-metrics ib-figbox in
+          inline-graphics wid (ht +' top +' bot) dp
+            (fun pt -> [draw-text (0pt, bot) ib-figbox |> shift-graphics pt] )
+        else
+          let top-mgn = inline-graphics 0pt top 0pt (fun (_, _) -> []) in
+          let bot-mgn = inline-graphics 0pt bot 0pt (fun (_, _) -> []) in
+          line-stack-bottom [
+            top-mgn ++ inline-fil;  % inline-fil は underfull を防ぐため
+            ib-figbox;
+            bot-mgn ++ inline-fil;  % inline-fil は underfull を防ぐため
+          ]
       in
       (inline-skip left) ++ ib ++ (inline-skip right)
     in
