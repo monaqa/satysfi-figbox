@@ -252,24 +252,22 @@ document (|
 
     +example(```
     +fig-center(
-      textbox ?:(set-font-size 9pt)
+      textbox ?:[set-font-size 9pt]
         {The quick brown fox jumps over the lazy dog.}
     );
     +fig-center(
       textbox-with-width
-        ?:(fun ctx -> ctx |> set-font-size 14pt
-                          |> set-text-color Color.blue)
+        ?:[set-font-size 14pt; set-text-color Color.blue]
           200pt
             {The quick brown fox jumps over the lazy dog.});
     ```)<%
     +fig-center(
-      textbox ?:(set-font-size 9pt)
+      textbox ?:[set-font-size 9pt]
         {The quick brown fox jumps over the lazy dog.}
     );
     +fig-center(
       textbox-with-width
-        ?:(fun ctx -> ctx |> set-font-size 14pt
-                          |> set-text-color Color.blue)
+        ?:[set-font-size 14pt; set-text-color Color.blue]
           200pt
             {The quick brown fox jumps over the lazy dog.});
     >%
