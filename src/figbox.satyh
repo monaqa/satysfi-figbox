@@ -17,8 +17,14 @@ module FigBox : sig
   val textbox-with-width: (context -> context)?-> length -> inline-text -> figbox
   val textblock: (context -> context)?-> length -> block-text -> figbox
 
+  % inline-boxes から作成
   val inlinebox: inline-boxes -> figbox
   val rawbox: (context -> inline-boxes) -> figbox
+  val figbox-nil: figbox
+
+  % graphics から作成
+  val from-graphics: point?-> point -> graphics list -> figbox
+  val from-graphics-with-bbox: graphics list -> figbox
 
 % FigBox.figbox の変換
   val hconcat : float?-> figbox list -> figbox
@@ -38,9 +44,16 @@ module FigBox : sig
   val rotate: float -> figbox -> figbox
   val scale: float?-> float -> figbox -> figbox
 
+  % 任意の graphics list で「落書き」する関数
+  val graffiti: graphics list -> figbox -> figbox
+
 % commands / embedding
 
+  % inline-boxes への変換
   val embed-figbox: context -> figbox -> inline-boxes
+
+  % inline-boxes への変換
+  val to-graphics: point?-> context -> figbox -> graphics
 
   direct +fig-center   : [figbox] block-cmd
   direct \fig-center   : [figbox] inline-cmd
@@ -220,6 +233,36 @@ end = struct
 
   let inlinebox ib = Box(fun _ -> ib)
   let rawbox ibf = Box(ibf)
+  let figbox-nil = Box(fun _ -> inline-nil)
+
+  let from-graphics ?:bpt1 (x2, y2) grlst =
+    let (x1, y1) = bpt1 |> Option.from (0pt, 0pt) in
+    let (xmin, xmax) = if x1 <' x2 then (x1, x2) else (x2, x1) in
+    let (ymin, ymax) = if y1 <' y2 then (y1, y2) else (y2, y1) in
+    let embedf ctx =
+      let wid = (xmax -' xmin) in
+      let ht = (ymax -' ymin) in
+      inline-graphics wid ht 0pt
+        (fun (x, y) -> grlst |> List.map (shift-graphics (x -' xmin, y -' ymin)))
+    in
+    Box(embedf)
+
+  let from-graphics-with-bbox grlst =
+    match grlst with
+    | [] -> figbox-nil
+    | gr-init :: rest ->
+        let foldf ((xminprev, yminprev), (xmaxprev, ymaxprev)) ((xmin, ymin), (xmax, ymax)) =
+          let xmin = if xmin <' xminprev then xmin else xminprev in
+          let ymin = if ymin <' yminprev then ymin else yminprev in
+          let xmax = if xmax >' xmaxprev then xmax else xmaxprev in
+          let ymax = if ymax >' ymaxprev then ymax else ymaxprev in
+          ((xmin, ymin), (xmax, ymax))
+        in
+        let ((xmin, ymin), (xmax, ymax)) = rest
+          |> List.map get-graphics-bbox
+          |> List.fold-left foldf (get-graphics-bbox gr-init)
+        in
+        from-graphics ?:(xmin, ymin) (xmax, ymax) grlst
 
 % FigBox の変換
 
@@ -417,7 +460,23 @@ end = struct
     in
     Box(embedf)
 
+  let graffiti grlst fb =
+    let embedf ctx =
+      let ib-fig = embed-figbox ctx fb in
+      let (wid, ht, dp) = get-natural-metrics ib-fig in
+      inline-graphics wid ht dp (fun orig -> [
+        [draw-text orig ib-fig];
+        grlst |> List.map (shift-graphics orig)
+      ] |> List.concat)
+    in
+    Box(embedf)
+
 % Commands
+
+  let to-graphics ?:pt ctx fb =
+    let pt = pt |> Option.from (0pt, 0pt) in
+    let ib = embed-figbox ctx fb in
+    draw-text pt ib
 
   let-block ctx +fig-block ?:al fb =
     let al = Option.from 0.5 al in
