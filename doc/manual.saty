@@ -2,6 +2,7 @@
 @require: itemize
 @require: annot
 @require: code
+@require: gr
 
 @require: easytable/easytable
 @require: enumitem/enumitem
@@ -19,20 +20,23 @@ let-inline \link url text =
   in
   {\href(url){\eval(ibf);}}
 
-let-block ctx +ctx ctxf bt = read-block (ctxf ctx) bt
+let-block ctx +ctx ctxflst bt = read-block (ctxflst |> List.fold-left (fun ctx ctxf -> ctxf ctx) ctx) bt
 
 let document record content = StdJaReport.document record '<%
-  +ctx(fun ctx -> (
-    let fsize = get-font-size ctx in
-    ctx |> set-paragraph-margin fsize fsize
-        |> set-leading (fsize *' 1.6)
-        |> set-code-text-command (command \code)
-  ))(content);
+  +ctx[
+    set-font-size 12pt;
+    set-paragraph-margin 12pt 12pt;
+    set-leading (12pt *' 1.6);
+    set-code-text-command (command \code);
+  ](content);
 >%
 
 let-block ctx +block-frame bt =
   let decoset = VDecoSet.simple-frame 0.5pt Color.black Color.white in
   block-frame-breakable ctx (5pt, 5pt, 10pt, 10pt) decoset (fun ctx -> read-block ctx bt)
+
+let-block +code code = 
+  '<+ctx[set-font-size 10pt; set-paragraph-margin 6pt 6pt; set-leading 16pt;]<+Code.code(code);>>
 
 let-block +example str bt =
   '<%
