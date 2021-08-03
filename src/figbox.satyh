@@ -46,7 +46,8 @@ module FigBox : sig
 
   % 任意の graphics list で「落書き」する関数
   val graffiti: graphics list -> figbox -> figbox
-  val graffiti-with-metrics: (length * length -> graphics list) -> figbox -> figbox
+  val graffiti-with-ctx: (context -> graphics list) -> figbox -> figbox
+  val graffiti-with-metrics: (length * length -> context -> graphics list) -> figbox -> figbox
 
 % commands / embedding
 
@@ -465,7 +466,7 @@ end = struct
     let embedf ctx =
       let ib-fig = embed-figbox ctx fb in
       let (wid, ht, dp) = get-natural-metrics ib-fig in
-      let grlst = grlstf (wid, ht +' dp) in
+      let grlst = grlstf (wid, ht +' dp) ctx in
       inline-graphics wid ht dp (fun orig -> [
         [draw-text orig ib-fig];
         grlst |> List.map (shift-graphics orig)
@@ -473,7 +474,8 @@ end = struct
     in
     Box(embedf)
 
-  let graffiti grlst = graffiti-with-metrics (fun _ -> grlst)
+  let graffiti-with-ctx grlstf = graffiti-with-metrics (fun _ -> grlstf)
+  let graffiti grlst = graffiti-with-metrics (fun _ _ -> grlst)
 
 % Commands
 

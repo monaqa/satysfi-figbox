@@ -211,13 +211,68 @@ document (|
     >%
 
     +p{
-      最初の例で示したとおり、テキストや数式をはじめとしたインラインテキストやブロックテキストも `figbox` 型に変換することができます。
+      単純なグラフィックスを元に figbox を作成したい場合は `from-graphics` 関数を用いるのが良いでしょう。
+    }
+
+    +example(```
+    +fig-center(from-graphics (150pt, 100pt) [
+      Gr.circle (30pt, 40pt) 20pt |> fill Color.blue;
+      Gr.rectangle (30pt, 40pt) (90pt, 80pt) |> stroke 2pt Color.red;
+      Gr.rectangle-round 4pt (70pt, 90pt) (120pt, 10pt) |> stroke 5pt Color.orange;
+    ] |> frame 1pt (Color.gray 0.8));
+    ```)<%
+    +fig-center(from-graphics (150pt, 100pt) [
+      Gr.circle (30pt, 40pt) 20pt |> fill Color.blue;
+      Gr.rectangle (30pt, 40pt) (90pt, 80pt) |> stroke 2pt Color.red;
+      Gr.rectangle-round 4pt (70pt, 90pt) (120pt, 10pt) |> stroke 5pt Color.orange;
+    ] |> frame 1pt (Color.gray 0.8));
+    >%
+
+    +p{
+      注目してほしいのは `from-graphics` という関数の引数です。
+      1番目の引数には作成したい figbox の横幅及び高さを与え、
+      2番目の引数には描きたいグラフィックス本体をリストで連ねます。
+      なお、 figbox そのものの大きさをわかりやすく可視化するため、
+      ここでは `frame` 関数を用いて figbox の境界に灰色の線を引いています。
+      `frame` 関数については後述します。
+    }
+
+    +p{
+      グラフィックスは一般にバウンディングボックスと呼ばれる情報を持っており、
+      その情報を用いて figbox の大きさをよしなに求めさせることも可能です
+      `from-graphics-with-bbox` を使えば、 figbox の大きさを手動で指定することなく figbox を作成できます。
+    }
+
+    +example(```
+    +fig-center(from-graphics-with-bbox [
+      Gr.circle (30pt, 40pt) 20pt |> fill Color.blue;
+      Gr.rectangle (30pt, 40pt) (90pt, 80pt) |> stroke 2pt Color.red;
+      Gr.rectangle-round 4pt (70pt, 90pt) (120pt, 10pt) |> stroke 5pt Color.orange;
+    ] |> frame 1pt (Color.gray 0.8));
+    ```)<%
+    +fig-center(from-graphics-with-bbox [
+      Gr.circle (30pt, 40pt) 20pt |> fill Color.blue;
+      Gr.rectangle (30pt, 40pt) (90pt, 80pt) |> stroke 2pt Color.red;
+      Gr.rectangle-round 4pt (70pt, 90pt) (120pt, 10pt) |> stroke 5pt Color.orange;
+    ] |> frame 1pt (Color.gray 0.8));
+    >%
+
+    +p{
+      先ほどとは異なり、figbox の境界が狭まって余白が無くなったことが分かります。
+      これは描かれたグラフィックスをすっぽりと覆うことのできる最小の長方形を計算したからです。
+      これを避けるためには先程のようにグラフィックスの座標と大きさを直接指定するか、もしくは
+      後述する `margin` 関数などで手動で任意の大きさのマージンを figbox に追加する必要があります。
+    }
+
+    +p{
+      さて、最初の例で示したとおり、テキストや数式をはじめとしたインラインテキストやブロックテキストも `figbox` 型に変換することができます。
     }
 
     +example(```
     +fig-center(textbox {The quick brown fox jumps over the lazy dog.});
     +fig-center(textbox {${x = \frac{-b\pm \sqrt{b^2 - 4ac}}{2a}}});
-    +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+    +fig-center(textbox-with-width 100pt
+      {The quick brown fox jumps over the lazy dog.});
     +fig-center(textblock 150pt '<
       +p{The quick brown fox jumps over the lazy dog.}
       +p{The quick brown fox jumps over the lazy dog.}
@@ -225,7 +280,8 @@ document (|
     ```)<%
     +fig-center(textbox {The quick brown fox jumps over the lazy dog.});
     +fig-center(textbox {${x = \frac{-b\pm \sqrt{b^2 - 4ac}}{2a}}});
-    +fig-center(textbox-with-width 100pt {The quick brown fox jumps over the lazy dog.});
+    +fig-center(textbox-with-width 100pt
+      {The quick brown fox jumps over the lazy dog.});
     +fig-center(textblock 150pt '<
       +p{The quick brown fox jumps over the lazy dog.}
       +p{The quick brown fox jumps over the lazy dog.}
@@ -256,26 +312,22 @@ document (|
 
     +example(```
     +fig-center(
-      textbox ?:(set-font-size 9pt)
-        {The quick brown fox jumps over the lazy dog.}
+      textbox ?:(set-font-size 9pt) {The quick brown fox jumps over the lazy dog.}
     );
     +fig-center(
       textbox-with-width
-        ?:(fun ctx -> ctx |> set-font-size 14pt
-                          |> set-text-color Color.blue)
-          200pt
-            {The quick brown fox jumps over the lazy dog.});
+        ?:(fun ctx -> ctx |> set-font-size 14pt |> set-text-color Color.blue)
+          200pt {The quick brown fox jumps over the lazy dog.}
+    );
     ```)<%
     +fig-center(
-      textbox ?:(set-font-size 9pt)
-        {The quick brown fox jumps over the lazy dog.}
+      textbox ?:(set-font-size 9pt) {The quick brown fox jumps over the lazy dog.}
     );
     +fig-center(
       textbox-with-width
-        ?:(fun ctx -> ctx |> set-font-size 14pt
-                          |> set-text-color Color.blue)
-          200pt
-            {The quick brown fox jumps over the lazy dog.});
+        ?:(fun ctx -> ctx |> set-font-size 14pt |> set-text-color Color.blue)
+          200pt {The quick brown fox jumps over the lazy dog.}
+    );
     >%
 
     +p{
@@ -514,13 +566,11 @@ document (|
 
     +example(```
     +fig-center(
-      frame 1pt Color.black
-        (hvmargin 5pt (include-image 100pt `fig/example1.jpg`))
+      frame 1pt Color.black (hvmargin 5pt (include-image 100pt `fig/example1.jpg`))
     );
     ```)<%
     +fig-center(
-      frame 1pt Color.black
-        (hvmargin 5pt (include-image 100pt `fig/example1.jpg`))
+      frame 1pt Color.black (hvmargin 5pt (include-image 100pt `fig/example1.jpg`))
     );
     >%
 
@@ -555,8 +605,7 @@ document (|
     +example(```
       +fig-center(
         vconcat ?:align-center [
-          include-image 200pt `fig/example.pdf`
-            |> frame 0.5pt Color.black;
+          include-image 200pt `fig/example.pdf` |> frame 0.5pt Color.black;
           gap 10pt;
           textbox {図1: `slydifi` パッケージで組んだスライドの例};
         ]
@@ -565,8 +614,7 @@ document (|
     ```)<%
       +fig-center(
         vconcat ?:align-center [
-          include-image 200pt `fig/example.pdf`
-            |> frame 0.5pt Color.black;
+          include-image ?:3 200pt `fig/example.pdf` |> frame 0.5pt Color.black;
           gap 10pt;
           textbox {図1: `slydifi` パッケージで組んだスライドの例};
         ]
@@ -574,6 +622,59 @@ document (|
       );
     >%
 
+    +p{
+      `figbox` に直接 graphics を書き込みたいことがあります。
+      そんなときには `graffiti` 関数を用いて落書きすることができます。
+    }
+
+    +example(```
+      +fig-center(
+        include-image ?:3 300pt `fig/example.pdf`
+          |> graffiti [
+            % 画像のフッター部分を赤四角で囲む
+            Gr.rectangle (278pt, 4pt) (293pt, 12pt) |> stroke 1pt Color.red
+          ]
+      );
+    ```)<%
+      +fig-center(
+        include-image ?:3 300pt `fig/example.pdf`
+          |> graffiti [
+            % 画像のフッター部分を赤四角で囲む
+            Gr.rectangle (278pt, 4pt) (293pt, 12pt) |> stroke 1pt Color.red
+          ]
+      );
+    >%
+
+    +p{
+      現在のテキスト処理文脈を使うことのできる `graffiti-with-ctx` もあります。
+      テキストを書き込みたいときに重宝します。
+    }
+
+    +example(```
+      +fig-center(
+        include-image ?:3 300pt `fig/example.pdf`
+          |> graffiti-with-ctx (fun ctx -> [
+            % 画像のフッター部分を赤四角で囲む
+            Gr.rectangle (278pt, 4pt) (293pt, 12pt) |> stroke 1pt Color.red;
+            Gr.line (274pt, 8pt) (230pt, 8pt) |> stroke 1.5pt Color.red;
+            Gr.circle (274pt, 8pt) 1.5pt |> fill Color.red;
+            Gr.text-leftward (228pt, 5pt)
+              (read-inline (ctx |> set-text-color Color.red) {フッター});
+          ])
+      );
+    ```)<%
+      +fig-center(
+        include-image ?:3 300pt `fig/example.pdf`
+          |> graffiti-with-ctx (fun ctx -> [
+            % 画像のフッター部分を赤四角で囲む
+            Gr.rectangle (278pt, 4pt) (293pt, 12pt) |> stroke 1pt Color.red;
+            Gr.line (274pt, 8pt) (230pt, 8pt) |> stroke 1.5pt Color.red;
+            Gr.circle (274pt, 8pt) 1.5pt |> fill Color.red;
+            Gr.text-leftward (228pt, 5pt)
+              (read-inline (ctx |> set-text-color Color.red) {フッター});
+          ])
+      );
+    >%
 
     +p{
       `figbox` を変換する関数としては、その他にも図の背景色を指定する `bgcolor` などが用意されています。
