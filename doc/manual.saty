@@ -5,7 +5,7 @@
 @require: gr
 
 @require: easytable/easytable
-@require: enumitem/enumitem
+% @require: enumitem/enumitem
 
 @require: base/typeset/base
 @import: ../src/figbox
@@ -240,17 +240,17 @@ document (|
     +p{
       グラフィックスは一般にバウンディングボックスと呼ばれる情報を持っており、
       その情報を用いて figbox の大きさをよしなに求めさせることも可能です
-      `from-graphics-with-bbox` を使えば、 figbox の大きさを手動で指定することなく figbox を作成できます。
+      `from-bbox-graphics` を使えば、 figbox の大きさを手動で指定することなく figbox を作成できます。
     }
 
     +example(```
-    +fig-center(from-graphics-with-bbox [
+    +fig-center(from-bbox-graphics [
       Gr.circle (30pt, 40pt) 20pt |> fill Color.blue;
       Gr.rectangle (30pt, 40pt) (90pt, 80pt) |> stroke 2pt Color.red;
       Gr.rectangle-round 4pt (70pt, 90pt) (120pt, 10pt) |> stroke 5pt Color.orange;
     ] |> frame 1pt (Color.gray 0.8));
     ```)<%
-    +fig-center(from-graphics-with-bbox [
+    +fig-center(from-bbox-graphics [
       Gr.circle (30pt, 40pt) 20pt |> fill Color.blue;
       Gr.rectangle (30pt, 40pt) (90pt, 80pt) |> stroke 2pt Color.red;
       Gr.rectangle-round 4pt (70pt, 90pt) (120pt, 10pt) |> stroke 5pt Color.orange;
@@ -588,7 +588,7 @@ document (|
 
     +p{
       このようにすればカッコのネストを軽減できるだけでなく、
-      \Enumitem.enumerate?:(Enumitem.dot-arabic){
+      \enumerate{
         * `fig/example1.jpg` を横幅 100pt で読み込む
         * 上の図の上下左右に 5pt のマージンを追加する
         * 上の図を幅 1pt の黒線で囲む
@@ -646,14 +646,14 @@ document (|
     >%
 
     +p{
-      現在のテキスト処理文脈を使うことのできる `graffiti-with-ctx` もあります。
+      現在のテキスト処理文脈を使うことのできる `graffiti-given-context` もあります。
       テキストを書き込みたいときに重宝します。
     }
 
     +example(```
       +fig-center(
         include-image ?:3 300pt `fig/example.pdf`
-          |> graffiti-with-ctx (fun ctx -> [
+          |> graffiti-given-context (fun ctx -> [
             % 画像のフッター部分を赤四角で囲む
             Gr.rectangle (278pt, 4pt) (293pt, 12pt) |> stroke 1pt Color.red;
             Gr.line (274pt, 8pt) (230pt, 8pt) |> stroke 1.5pt Color.red;
@@ -665,7 +665,7 @@ document (|
     ```)<%
       +fig-center(
         include-image ?:3 300pt `fig/example.pdf`
-          |> graffiti-with-ctx (fun ctx -> [
+          |> graffiti-given-context (fun ctx -> [
             % 画像のフッター部分を赤四角で囲む
             Gr.rectangle (278pt, 4pt) (293pt, 12pt) |> stroke 1pt Color.red;
             Gr.line (274pt, 8pt) (230pt, 8pt) |> stroke 1.5pt Color.red;

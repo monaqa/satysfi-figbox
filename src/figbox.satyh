@@ -24,7 +24,9 @@ module FigBox : sig
 
   % graphics から作成
   val from-graphics: point?-> point -> graphics list -> figbox
-  val from-graphics-with-bbox: graphics list -> figbox
+  val from-graphics-given-context: point?-> point -> (context -> graphics list) -> figbox
+  val from-bbox-graphics: graphics list -> figbox
+  val from-bbox-graphics-given-context: (context -> graphics list) -> figbox
 
 % FigBox.figbox の変換
   val hconcat : float?-> figbox list -> figbox
@@ -46,8 +48,8 @@ module FigBox : sig
 
   % 任意の graphics list で「落書き」する関数
   val graffiti: graphics list -> figbox -> figbox
-  val graffiti-with-ctx: (context -> graphics list) -> figbox -> figbox
-  val graffiti-with-metrics: (length * length -> context -> graphics list) -> figbox -> figbox
+  val graffiti-given-context: (context -> graphics list) -> figbox -> figbox
+  val graffiti-given-metrics: (length * length -> context -> graphics list) -> figbox -> figbox
 
 % commands / embedding
 
@@ -237,7 +239,7 @@ end = struct
   let rawbox ibf = Box(ibf)
   let figbox-nil = Box(fun _ -> inline-nil)
 
-  let from-graphics ?:bpt1 (x2, y2) grlst =
+  let from-graphics-given-context ?:bpt1 (x2, y2) grlstf =
     let (x1, y1) = bpt1 |> Option.from (0pt, 0pt) in
     let (xmin, xmax) = if x1 <' x2 then (x1, x2) else (x2, x1) in
     let (ymin, ymax) = if y1 <' y2 then (y1, y2) else (y2, y1) in
@@ -245,26 +247,39 @@ end = struct
       let wid = (xmax -' xmin) in
       let ht = (ymax -' ymin) in
       inline-graphics wid ht 0pt
-        (fun (x, y) -> grlst |> List.map (shift-graphics (x -' xmin, y -' ymin)))
+        (fun (x, y) -> grlstf ctx |> List.map (shift-graphics (x -' xmin, y -' ymin)))
     in
     Box(embedf)
 
-  let from-graphics-with-bbox grlst =
-    match grlst with
-    | [] -> figbox-nil
-    | gr-init :: rest ->
-        let foldf ((xminprev, yminprev), (xmaxprev, ymaxprev)) ((xmin, ymin), (xmax, ymax)) =
-          let xmin = if xmin <' xminprev then xmin else xminprev in
-          let ymin = if ymin <' yminprev then ymin else yminprev in
-          let xmax = if xmax >' xmaxprev then xmax else xmaxprev in
-          let ymax = if ymax >' ymaxprev then ymax else ymaxprev in
-          ((xmin, ymin), (xmax, ymax))
-        in
-        let ((xmin, ymin), (xmax, ymax)) = rest
-          |> List.map get-graphics-bbox
-          |> List.fold-left foldf (get-graphics-bbox gr-init)
-        in
-        from-graphics ?:(xmin, ymin) (xmax, ymax) grlst
+  let from-graphics ?:bpt1 bpt2 grlst =
+    match bpt1 with
+    | Some(bpt1) -> from-graphics-given-context ?:bpt1 bpt2 (fun _ -> grlst)
+    | None       -> from-graphics-given-context bpt2 (fun _ -> grlst)
+
+  let from-bbox-graphics-given-context grlstf =
+    let embedf ctx =
+      match (grlstf ctx) with
+      | [] -> inline-nil
+      | gr-init :: rest ->
+          let foldf ((xminprev, yminprev), (xmaxprev, ymaxprev)) ((xmin, ymin), (xmax, ymax)) =
+            let xmin = if xmin <' xminprev then xmin else xminprev in
+            let ymin = if ymin <' yminprev then ymin else yminprev in
+            let xmax = if xmax >' xmaxprev then xmax else xmaxprev in
+            let ymax = if ymax >' ymaxprev then ymax else ymaxprev in
+            ((xmin, ymin), (xmax, ymax))
+          in
+          let ((xmin, ymin), (xmax, ymax)) = rest
+            |> List.map get-graphics-bbox
+            |> List.fold-left foldf (get-graphics-bbox gr-init)
+          in
+          let wid = (xmax -' xmin) in
+          let ht = (ymax -' ymin) in
+          inline-graphics wid ht 0pt
+            (fun (x, y) -> grlstf ctx |> List.map (shift-graphics (x -' xmin, y -' ymin)))
+    in
+    Box(embedf)
+
+  let from-bbox-graphics grlst = from-bbox-graphics-given-context (fun _ -> grlst)
 
 % FigBox の変換
 
@@ -462,7 +477,7 @@ end = struct
     in
     Box(embedf)
 
-  let graffiti-with-metrics grlstf fb =
+  let graffiti-given-metrics grlstf fb =
     let embedf ctx =
       let ib-fig = embed-figbox ctx fb in
       let (wid, ht, dp) = get-natural-metrics ib-fig in
@@ -474,8 +489,8 @@ end = struct
     in
     Box(embedf)
 
-  let graffiti-with-ctx grlstf = graffiti-with-metrics (fun _ -> grlstf)
-  let graffiti grlst = graffiti-with-metrics (fun _ _ -> grlst)
+  let graffiti-given-context grlstf = graffiti-given-metrics (fun _ -> grlstf)
+  let graffiti grlst = graffiti-given-metrics (fun _ _ -> grlst)
 
 % Commands
 
