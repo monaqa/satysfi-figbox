@@ -29,22 +29,24 @@ module FigBox : sig
   val from-bbox-graphics-given-context: (context -> graphics list) -> figbox
 
 % FigBox.figbox の変換
-  val hconcat : float?-> figbox list -> figbox
-  val vconcat : float?-> figbox list -> figbox
   val margin : length -> length -> length -> length -> figbox -> figbox
   val hmargin : length -> figbox -> figbox
   val vmargin : length -> figbox -> figbox
   val hvmargin : length -> figbox -> figbox
   val draft: figbox -> figbox
   val shift: length -> length -> figbox -> figbox
-  val gap: length -> figbox
-  val sep: ((length * length) -> (length * length) -> graphics list)?-> length -> figbox
   val glass-box: (float * float)?-> length -> length -> figbox -> figbox
   val frame: length -> color -> figbox -> figbox
   val bgcolor: color -> figbox -> figbox
-
   val rotate: float -> figbox -> figbox
   val scale: float?-> float -> figbox -> figbox
+
+  % 複数の FigBox.figbox を合成
+  val hconcat : float?-> figbox list -> figbox
+  val vconcat : float?-> figbox list -> figbox
+
+  val gap: length -> figbox
+  val sep: ((length * length) -> (length * length) -> graphics list)?-> length -> figbox
 
   % 任意の graphics list で「落書き」する関数
   val graffiti: graphics list -> figbox -> figbox
