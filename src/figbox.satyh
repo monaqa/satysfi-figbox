@@ -17,30 +17,49 @@ module FigBox : sig
   val textbox-with-width: (context -> context)?-> length -> inline-text -> figbox
   val textblock: (context -> context)?-> length -> block-text -> figbox
 
+  % inline-boxes から作成
   val inlinebox: inline-boxes -> figbox
   val rawbox: (context -> inline-boxes) -> figbox
+  val figbox-nil: figbox
+
+  % graphics から作成
+  val from-graphics: point?-> point -> graphics list -> figbox
+  val from-graphics-given-context: point?-> point -> (context -> graphics list) -> figbox
+  val from-bbox-graphics: graphics list -> figbox
+  val from-bbox-graphics-given-context: (context -> graphics list) -> figbox
 
 % FigBox.figbox の変換
-  val hconcat : float?-> figbox list -> figbox
-  val vconcat : float?-> figbox list -> figbox
   val margin : length -> length -> length -> length -> figbox -> figbox
   val hmargin : length -> figbox -> figbox
   val vmargin : length -> figbox -> figbox
   val hvmargin : length -> figbox -> figbox
   val draft: figbox -> figbox
   val shift: length -> length -> figbox -> figbox
-  val gap: length -> figbox
-  val sep: ((length * length) -> (length * length) -> graphics list)?-> length -> figbox
   val glass-box: (float * float)?-> length -> length -> figbox -> figbox
   val frame: length -> color -> figbox -> figbox
   val bgcolor: color -> figbox -> figbox
-
   val rotate: float -> figbox -> figbox
   val scale: float?-> float -> figbox -> figbox
 
+  % 複数の FigBox.figbox を合成
+  val hconcat : float?-> figbox list -> figbox
+  val vconcat : float?-> figbox list -> figbox
+
+  val gap: length -> figbox
+  val sep: ((length * length) -> (length * length) -> graphics list)?-> length -> figbox
+
+  % 任意の graphics list で「落書き」する関数
+  val graffiti: graphics list -> figbox -> figbox
+  val graffiti-given-context: (context -> graphics list) -> figbox -> figbox
+  val graffiti-given-metrics: (length * length -> context -> graphics list) -> figbox -> figbox
+
 % commands / embedding
 
+  % inline-boxes への変換
   val embed-figbox: context -> figbox -> inline-boxes
+
+  % inline-boxes への変換
+  val to-graphics: point?-> context -> figbox -> graphics
 
   direct +fig-center   : [figbox] block-cmd
   direct \fig-center   : [figbox] inline-cmd
@@ -220,6 +239,49 @@ end = struct
 
   let inlinebox ib = Box(fun _ -> ib)
   let rawbox ibf = Box(ibf)
+  let figbox-nil = Box(fun _ -> inline-nil)
+
+  let from-graphics-given-context ?:bpt1 (x2, y2) grlstf =
+    let (x1, y1) = bpt1 |> Option.from (0pt, 0pt) in
+    let (xmin, xmax) = if x1 <' x2 then (x1, x2) else (x2, x1) in
+    let (ymin, ymax) = if y1 <' y2 then (y1, y2) else (y2, y1) in
+    let embedf ctx =
+      let wid = (xmax -' xmin) in
+      let ht = (ymax -' ymin) in
+      inline-graphics wid ht 0pt
+        (fun (x, y) -> grlstf ctx |> List.map (shift-graphics (x -' xmin, y -' ymin)))
+    in
+    Box(embedf)
+
+  let from-graphics ?:bpt1 bpt2 grlst =
+    match bpt1 with
+    | Some(bpt1) -> from-graphics-given-context ?:bpt1 bpt2 (fun _ -> grlst)
+    | None       -> from-graphics-given-context bpt2 (fun _ -> grlst)
+
+  let from-bbox-graphics-given-context grlstf =
+    let embedf ctx =
+      match (grlstf ctx) with
+      | [] -> inline-nil
+      | gr-init :: rest ->
+          let foldf ((xminprev, yminprev), (xmaxprev, ymaxprev)) ((xmin, ymin), (xmax, ymax)) =
+            let xmin = if xmin <' xminprev then xmin else xminprev in
+            let ymin = if ymin <' yminprev then ymin else yminprev in
+            let xmax = if xmax >' xmaxprev then xmax else xmaxprev in
+            let ymax = if ymax >' ymaxprev then ymax else ymaxprev in
+            ((xmin, ymin), (xmax, ymax))
+          in
+          let ((xmin, ymin), (xmax, ymax)) = rest
+            |> List.map get-graphics-bbox
+            |> List.fold-left foldf (get-graphics-bbox gr-init)
+          in
+          let wid = (xmax -' xmin) in
+          let ht = (ymax -' ymin) in
+          inline-graphics wid ht 0pt
+            (fun (x, y) -> grlstf ctx |> List.map (shift-graphics (x -' xmin, y -' ymin)))
+    in
+    Box(embedf)
+
+  let from-bbox-graphics grlst = from-bbox-graphics-given-context (fun _ -> grlst)
 
 % FigBox の変換
 
@@ -417,7 +479,27 @@ end = struct
     in
     Box(embedf)
 
+  let graffiti-given-metrics grlstf fb =
+    let embedf ctx =
+      let ib-fig = embed-figbox ctx fb in
+      let (wid, ht, dp) = get-natural-metrics ib-fig in
+      let grlst = grlstf (wid, ht +' dp) ctx in
+      inline-graphics wid ht dp (fun orig -> [
+        [draw-text orig ib-fig];
+        grlst |> List.map (shift-graphics orig)
+      ] |> List.concat)
+    in
+    Box(embedf)
+
+  let graffiti-given-context grlstf = graffiti-given-metrics (fun _ -> grlstf)
+  let graffiti grlst = graffiti-given-metrics (fun _ _ -> grlst)
+
 % Commands
+
+  let to-graphics ?:pt ctx fb =
+    let pt = pt |> Option.from (0pt, 0pt) in
+    let ib = embed-figbox ctx fb in
+    draw-text pt ib
 
   let-block ctx +fig-block ?:al fb =
     let al = Option.from 0.5 al in
