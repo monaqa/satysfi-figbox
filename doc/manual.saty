@@ -534,7 +534,7 @@ document (|
 
     +p{
       このようにすればカッコのネストを軽減できるだけでなく、
-      \Enumitem.enumerate?:(Enumitem.dot-arabic){
+      \EnumitemAlias.enumerate?:(EnumitemAlias.dot-arabic){
         * `fig/example1.jpg` を横幅 100pt で読み込む
         * 上の図の上下左右に 5pt のマージンを追加する
         * 上の図を幅 1pt の黒線で囲む
