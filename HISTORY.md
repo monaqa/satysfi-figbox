@@ -1,5 +1,14 @@
 # History
 
+## 0.1.4 (2022-04-16)
+
+* add functions associated to graphics
+  * `figbox-nil`
+  * `from-graphics`, `from-graphics-given-context`
+  * `from-bbox-graphics`, `from-bbox-graphics-given-context`
+  * `graffiti`, `graffiti-given-context`, `graffiti-given-metrics`
+  * `to-graphics`
+
 ## 0.1.3 (2021-05-19)
 
 * add functions/commands
