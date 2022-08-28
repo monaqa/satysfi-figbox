@@ -150,6 +150,7 @@ end = struct
       | `jfif` -> use-image-by-width (load-image pth) wid
       | `jfi`  -> use-image-by-width (load-image pth) wid
       | `jif`  -> use-image-by-width (load-image pth) wid
+      | `png`  -> use-image-by-width (load-image pth) wid
       | _ ->
           let () = display-message (`Failed to include image: [` ^ pth ^ `]`) in
           inline-nil
